@@ -34,14 +34,3 @@ export async function requestGeminiJSON(system, payload, schema, { apiKey, model
   console.info('[Study Space][Gemini] Complete', { model, durationMs: Date.now() - started, inputTokens: usage.total_input_tokens || 0, outputTokens: usage.total_output_tokens || 0 });
   return { ...data, provider: PROVIDER, model, usage: { inputTokens: usage.total_input_tokens || 0, outputTokens: usage.total_output_tokens || 0, thinkingTokens: usage.total_thought_tokens || 0, totalTokens: usage.total_tokens || 0 } };
 }
-
-async function testGemini() {
-  const response = await ai.models.generateContent({
-    model: "gemini-3.5-flash-lite",
-    contents: "Explain recursion in one sentence.",
-  });
-
-  console.log(response.text);
-}
-
-testGemini();
