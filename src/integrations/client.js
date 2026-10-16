@@ -10,7 +10,7 @@ export function createExtensionConnections(browser = globalThis.chrome) {
     try { result = await browser.runtime.sendMessage({ ...message, buildId: BUILD_ID }); }
     catch { throw new Error('The extension connection was lost. Reload the extension, then refresh this page.'); }
     if (result?.buildId !== BUILD_ID) throw new Error('An older extension worker is running. Reload the extension and refresh this page.');
-    if (!result.ok) { console.warn('[Study Space][Connection] Failed', { action: message.type, response: debugData(result) }); throw new Error(result.error || 'The connection failed.'); }
+    if (!result.ok) { console.warn('[Study Space][Connection] Failed', { action: message.type, response: debugData(result) }); throw Object.assign(new Error(result.error || 'The connection failed.'), { diagnostics: result.diagnostics }); }
     console.info('[Study Space][Connection] Complete', { action: message.type, response: debugData(result), ...(result.courses ? { courses: result.courses.length } : {}), ...(result.events ? { events: result.events.length } : {}), ...(result.state ? { sections: result.state.section?.length, activities: result.state.cm?.length } : {}) });
     return result;
   }
@@ -19,9 +19,10 @@ export function createExtensionConnections(browser = globalThis.chrome) {
     moodle: {
       open: () => request({ type: 'OPEN_MOODLE' }),
       listCourses: () => request({ type: 'SYNC_MOODLE' }),
+      runExactCoursesCall: () => request({ type: 'MOODLE_EXACT_COURSES_CALL' }),
       async readCourse(course) {
         const result = await request({ type: 'READ_MOODLE_COURSE', courseId: Number(course.id) });
-        return normalizeCourseState(result.state, course);
+        return { ...normalizeCourseState(result.state, course), dataSource: result.dataSource || 'live', fallbackReason: result.fallbackReason || null };
       },
       readDeadlines: () => request({ type: 'SYNC_MOODLE_DEADLINES' })
     }

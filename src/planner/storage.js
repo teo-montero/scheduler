@@ -1,9 +1,9 @@
-import { createDemo, emptyWorkspace } from '../demo.js';
+import { emptyWorkspace } from '../demo.js';
 import { migrateMoodleSnapshots } from '../course-content.js';
 import { DEFAULT_SETTINGS } from '../scheduler.js';
 
 export function normalizeWorkspace(input) {
-  if (!input || !Array.isArray(input.tasks) || !Array.isArray(input.events)) return createDemo();
+  if (!input || !Array.isArray(input.tasks) || !Array.isArray(input.events)) return emptyWorkspace();
   const state = { ...emptyWorkspace(), ...input };
   state.settings = { ...DEFAULT_SETTINGS, ...input.settings };
   state.excludedCourseIds ||= [];

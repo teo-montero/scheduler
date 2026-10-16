@@ -39,6 +39,7 @@ export function createPlannerService({ storage, connections, ai, now = () => new
     loadCourses: () => run(async () => {
       const result = await connections.moodle.listCourses();
       const state = live(await load()); state.courses = result.courses; state.moodleSyncedAt = now().toISOString();
+      state.moodleDataSource = result.dataSource || 'live'; state.moodleFallbackReason = result.fallbackReason || null;
       return { workspace: await save(state), warnings: result.warnings || [] };
     }),
     selectCourses: ids => run(async () => {
@@ -48,16 +49,17 @@ export function createPlannerService({ storage, connections, ai, now = () => new
       return save(await replan(state));
     }),
     fetchSelectedCourses: () => run(async () => {
-      const state = await load(), courses = state.courses.filter(c => isCourseIncluded(state, c.id)), errors = [];
+      const state = await load(), courses = state.courses.filter(c => isCourseIncluded(state, c.id)), errors = [], warnings = [];
       for (const [index, course] of courses.entries()) {
         progress('fetching', course, index + 1, courses.length);
         try {
           const content = await connections.moodle.readCourse(course), fingerprint = await courseFingerprint(content);
-          state.courseContent[course.id] = { ...state.courseContent[course.id], state: content, fingerprint, fetchedAt: now().toISOString() };
+          state.courseContent[course.id] = { ...state.courseContent[course.id], state: content, fingerprint, dataSource: content.dataSource || 'live', fallbackReason: content.fallbackReason || null, fetchedAt: now().toISOString() };
+          if (content.dataSource === 'mock') warnings.push(`MOCK FALLBACK: ${course.shortname || course.name} uses the supplied course response because its live request failed (${content.fallbackReason}).`);
           await save(state); // Durable before any AI request.
         } catch (error) { errors.push({ courseId: course.id, message: error.message }); }
       }
-      return { workspace: state, errors };
+      return { workspace: state, errors, warnings };
     }),
     analyseSelectedCourses: ({ force = false } = {}) => run(async () => {
       let state = await load(); const errors = [];
@@ -88,7 +90,6 @@ export function createPlannerService({ storage, connections, ai, now = () => new
       const state = live(await load());
       if (personal) state.personal = normalizePersonal(personal);
       if (weeklyActivities) state.weeklyActivities = normalizeWeeklyActivities(weeklyActivities);
-      state.setupCompletedAt = now().toISOString();
       return save(await replan(state));
     }),
     createPlan: ({ useAI = true } = {}) => run(async () => save(await replan(await load(), useAI))),

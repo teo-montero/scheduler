@@ -73,7 +73,7 @@ export function normalizeCourseState(input, course = {}) {
 }
 export async function courseFingerprint(state) {
   // Completion changes update progress locally without paying for another analysis.
-  const content = { ...state, activities: state.activities.map(({ completionStatus, ...activity }) => activity) };
+  const content = { course: state.course, sections: state.sections, activities: state.activities.map(({ completionStatus, ...activity }) => activity) };
   const digest = await globalThis.crypto.subtle.digest('SHA-256', new TextEncoder().encode(JSON.stringify(content)));
   return [...new Uint8Array(digest)].map(value => value.toString(16).padStart(2, '0')).join('');
 }

@@ -49,7 +49,7 @@ function renderCourses() {
     const saved = workspace.courseContent?.[course.id]?.state;
     if (saved) {
       const detail = document.createElement('details'), summary = document.createElement('summary'), samples = document.createElement('p');
-      summary.textContent = `${saved.sections.length} sections · ${saved.activities.length} activities fetched`;
+      summary.textContent = `${saved.sections.length} sections · ${saved.activities.length} activities fetched${saved.dataSource === 'mock' ? ' · MOCK FALLBACK' : ''}`;
       samples.className = 'setup-help'; samples.textContent = saved.activities.slice(0, 3).map(item => item.name).join(' · ') || 'No visible activities in the response.';
       detail.append(summary, samples); target.append(detail);
     }
@@ -74,6 +74,7 @@ async function checkCourseData() {
   const selected = workspace.courses.filter(course => isCourseIncluded(workspace, course.id));
   const count = selected.reduce((sum, course) => sum + (workspace.courseContent[course.id]?.state.activities.length || 0), 0);
   status.textContent = result.errors.length ? result.errors.map(error => `${error.courseId}: ${error.message}`).join(' ') : `${selected.length} selected course indexes fetched and saved · ${count} visible activities. No AI calls have been made.`;
+  if (result.warnings?.length) status.textContent += ` ${result.warnings.join(' ')}`;
   if (result.errors.length) throw new Error(status.textContent);
 }
 planner.subscribe(event => { if (event.type === 'progress') status.textContent = `${event.stage === 'fetching' ? 'Fetching' : 'Analysing'} ${event.course.shortname || event.course.name} (${event.index}/${event.total})…`; });
@@ -108,7 +109,9 @@ form.addEventListener('submit', event => {
     workspace = await planner.savePersonal({ weeklyActivities });
     const analysed = await planner.analyseSelectedCourses();
     workspace = await planner.createPlan();
-    workspace.analysisWarnings = analysed.errors.map(error => error.message); await planner.saveWorkspace(workspace);
+    workspace.analysisWarnings = analysed.errors.map(error => error.message);
+    workspace.setupComplete = true; workspace.setupCompletedAt = new Date().toISOString();
+    await planner.saveWorkspace(workspace);
     window.location.assign('dashboard.html');
   });
 });

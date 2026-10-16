@@ -6,6 +6,7 @@ import { BUILD_ID, TIMETABLE_ORIGINS } from './protocol.js';
 import { addDays, atTime, dateKey, dateParts, weekStart, minutesOfDay, formatTime, formatDate, durationLabel } from './dates.js';
 import { createDemo, emptyWorkspace } from './demo.js';
 import { validateCalendarUrl } from './ical.js';
+import { hasCompletedSetup } from './onboarding.js';
 
 const planner = createBrowserPlanner();
 const workspaceStorage = createWorkspaceStorage();
@@ -276,7 +277,8 @@ async function buildCoursePlan() {
     const analysed = await planner.analyseSelectedCourses();
     state = await planner.createPlan(); render();
     const errors = [...fetched.errors, ...analysed.errors];
-    toast(errors.length ? `Course content saved. ${errors.map(error => error.message).join(' ')}` : state.planning.warning || 'Study tasks extracted and your calendar updated.', true);
+    const message = errors.length ? `Course content saved. ${errors.map(error => error.message).join(' ')}` : state.planning.warning || 'Study tasks extracted and your calendar updated.';
+    toast([message, ...(fetched.warnings || [])].join(' '), true);
   } catch (error) { state = await planner.getWorkspace(); render(); toast(error.message, true); }
   finally { unsubscribe(); syncing = false; setSyncButton(false); renderCourses(); }
 }
@@ -342,7 +344,11 @@ async function init() {
   document.body.dataset.input = 'pointer';
   document.addEventListener('keydown', () => { document.body.dataset.input = 'keyboard'; }, { capture: true });
   document.addEventListener('pointerdown', () => { document.body.dataset.input = 'pointer'; }, { capture: true });
-  try { state = await planner.getWorkspace(); } catch { state = createDemo(); }
+  state = await planner.getWorkspace();
+  if (!hasCompletedSetup(state) && new URL(window.location.href).searchParams.get('skipSetup') !== '1') {
+    window.location.replace('setup.html');
+    return;
+  }
   for (let hour = 5; hour <= 23; hour++) {
     if (hour <= 21) $('#start-hour').add(new Option(`${String(hour).padStart(2, '0')}:00`, hour));
     if (hour >= 6) $('#end-hour').add(new Option(`${String(hour).padStart(2, '0')}:00`, hour));

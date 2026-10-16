@@ -28,3 +28,6 @@ test-results/
 !.env.example
 
 /moodle-check.js
+
+# Temporary Moodle session override (never commit live credentials)
+/moodle-local.json
