@@ -1,0 +1,20 @@
+node_modules/
+dist/
+.DS_Store
+*.log
+.env*
+playwright-report/
+test-results/
+/dashboard.js
+/background.js
+
+# Personal timetable/calendar exports
+*.ics
+*.ical
+
+# Packaged Chrome extensions and private signing keys
+*.crx
+*.pem
+*.key
+*.p12
+*.pfx

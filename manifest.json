@@ -1,0 +1,36 @@
+{
+  "manifest_version": 3,
+  "name": "Study Space \u00b7 UCL Planner",
+  "version": "1.0.1",
+  "minimum_chrome_version": "111",
+  "description": "Bring your UCL deadlines and timetable together, and make room for focused study.",
+  "permissions": [
+    "storage",
+    "scripting"
+  ],
+  "host_permissions": [
+    "https://moodle.ucl.ac.uk/*",
+    "https://timetable.apps.ucl.ac.uk/*",
+    "https://timetable.mesh.ucl.ac.uk/*"
+  ],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "action": {
+    "default_title": "Open Study Space",
+    "default_icon": {
+      "16": "assets/icon16.png",
+      "48": "assets/icon48.png",
+      "128": "assets/icon128.png"
+    }
+  },
+  "icons": {
+    "16": "assets/icon16.png",
+    "48": "assets/icon48.png",
+    "128": "assets/icon128.png"
+  },
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'"
+  }
+}

@@ -1,0 +1,69 @@
+# Study Space · UCL Planner
+
+A Manifest V3 Chrome extension with a full-page study planner. It combines Moodle action deadlines with a UCL iCalendar timetable and schedules focus sessions around classes and personal time. No backend, account, API key or AI service is needed.
+
+## Implementation guides
+
+- [Calendar connection](docs/01-calendar-connection.md): URL handling, downloading ICS, recurrence, timezones and import feedback.
+- [Moodle connection](docs/02-moodle-connection.md): session authentication, MAIN-world execution, AJAX calls and task mapping.
+- [UI design and data assignment](docs/03-ui-and-data-assignment.md): visual structure, state models, calendar rendering and scheduling, with a worked example.
+
+## Run it
+
+1. In this folder, run `npm install` and `npm run build`.
+2. Open `chrome://extensions` and enable **Developer mode**.
+3. Click **Load unpacked** and select this project folder (`scheduler-extension`). You can also select `dist` for a clean package.
+4. Click the extension’s toolbar icon. The planner opens in a normal browser tab.
+5. Start with the labelled sample workspace, or connect your data.
+
+After code changes, run `npm run build`, click **Reload** on the extension card, then refresh its dashboard tab. Both the project root and `dist` contain the manifest and runtime files after building. Selecting `src`, a parent directory, or a zip file will not work.
+
+For a browser preview: `npm run build && npm run dev`, then open http://127.0.0.1:4173. The preview supports sample data, manual tasks, ICS file imports, and scheduling. Live Moodle/timetable URL sync requires the loaded extension.
+
+## Connect your data
+
+**Moodle:** Open https://moodle.ucl.ac.uk/my/ in another tab and sign in. In the planner, click **Sync Moodle**. The extension reads the current `window.M.cfg.sesskey` in that tab’s MAIN world and calls Moodle’s same-origin AJAX API. It pages through enrolled courses and calendar action events. If deadlines fail but courses succeed, it keeps previous deadlines and displays a warning.
+
+**Timetable:** Open **Preferences** or **Manage connections**. Paste your UCL timetable iCalendar subscription URL and click **Sync timetable**. The legacy `https://timetable.apps.ucl.ac.uk/icalendar/…` subscription is resolved directly to UCL’s `https://timetable.mesh.ucl.ac.uk/online-timetable-api-proxy/v0.1/icalendar?key_identifier=…` API, avoiding its HTTP 307 redirect. You can paste either URL. Only these UCL timetable hosts and recognised paths are allowed. The button shows download progress, then a preview of your next classes and **View my calendar**. If Chrome has withheld timetable site access, it requests the necessary UCL host permissions. Saving preferences with a new subscription URL also downloads it immediately. Alternatively, import an `.ics` file. Timetable imports expand recurring events for the next 120 days, with a one-week lookback. Refresh the feed periodically using **Sync timetable**.
+
+The first successful real integration replaces the sample workspace. Real feeds are never mixed with sample classes or assignments. Importing a timetable does not automatically sync Moodle; connect both feeds. Syncing and file importing save immediately. The preferences form’s Cancel button dismisses unsaved study-hour/URL edits. Failed downloads retain the previous calendar and display an error beside the subscription controls.
+
+## Use the planner
+
+- Add personal tasks, deadlines and work estimates. Estimates are starting points: Moodle assignments default to 120 minutes and quizzes to 60.
+- Click a calendar session for its details, or a task title to edit it. Moodle titles/deadlines are refreshed from Moodle; estimates and local completion survive syncs.
+- Mark a task complete when all its work is finished. Completion affects this planner only; it does not submit work or change Moodle.
+- **Regenerate plan** uses the current time and plans up to 28 days ahead, prioritising the earliest deadlines. It respects study hours, weekends, timetable events, personal time, and breaks.
+- Work that cannot fit is reported in **All tasks**. The planner never silently schedules it beyond its deadline.
+- Existing saved plans stay in place when reopening the dashboard. Regenerate to update them for the current time.
+- Initial sample plans illustrate a complete week, including earlier days; any edits/regeneration use the actual current time.
+
+The command box supports a small, explicit grammar, processed on this device:
+
+- `I’m busy Wednesday afternoon` → blocks 12:00–18:00 and replans.
+- `I’m busy tomorrow 14:00–17:00` → blocks that time.
+- `Finished maths problem sheet` → completes the matching task and replans.
+- `Move maths problem sheet to Friday` → constrains its work to that day and reports any time that will not fit.
+
+Day names mean the next matching day, including today. Morning is 08:00–12:00, afternoon 12:00–18:00, evening 17:00–23:00. Use “all day” or a 24-hour range for other times. Ambiguous task matches request a more specific title. To clear a task’s day preference, save it in the task editor. Remove personal-time blocks in Preferences or by clicking them on the calendar. These blocks move study sessions; they do not change your university timetable.
+
+## Data and scope
+
+- Uses `chrome.storage.local` restricted to trusted extension contexts. No analytics, remote scripts, remote fonts, or data uploads.
+- Never reads or saves session cookies. The session key stays inside the Moodle page’s sync function and is not returned or persisted.
+- The private calendar URL is saved locally in the extension only. Never paste it into source files or commit it. Clearing saved data removes it.
+- The previous starter files contained a hardcoded session key and private calendar URL; both were removed.
+- All planner times use **Europe/London**, including BST/GMT transitions, independently of the device timezone.
+- Calendar parsing uses bundled `ical.js`: timezone definitions, TZID dates, UTC, all-day events, recurrence, exclusions, overrides and cancellations are supported. Floating dates use London time; timezone IDs without embedded definitions use the browser’s timezone database.
+- Moodle sync reads actionable calendar events, not every course activity, document or assessment. Site-specific UCL availability of these internal APIs still requires validation against your authenticated account.
+- To discover further course/resource APIs, inspect DevTools Network on your signed-in course page, filter for `lib/ajax/service.php`, and inspect method names/arguments. Do not share request URLs containing session keys. No endpoint discovery or access to a real student account was performed by this implementation.
+
+## Checks
+
+`npm run check` validates syntax, runs scheduling/calendar/command/Moodle tests, and rebuilds the extension.
+
+`npm run test:browser` tests both unpacked folders in isolated Chromium profiles, covers dashboard interactions, calendar previews, network failure recovery, importing on Save, and exercises the full MAIN-world Moodle sync with simulated responses. Install the test browser once with `npx playwright install chromium`. It never uses your real Chrome profile or Moodle account.
+
+Source is in `src/`; `dashboard.html` and `styles.css` define the UI; `scripts/build.mjs` bundles all dependencies locally into root runtime files and copies a clean distribution to `dist/`.
+
+API references: [Chrome scripting](https://developer.chrome.com/docs/extensions/reference/api/scripting), [Moodle calendar external API](https://github.com/moodle/moodle/blob/MOODLE_405_STABLE/calendar/externallib.php), [ical.js](https://github.com/kewisch/ical.js).

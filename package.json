@@ -1,0 +1,20 @@
+{
+  "name": "ucl-study-planner",
+  "version": "1.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "dev": "node scripts/serve.mjs",
+    "test": "TZ=Europe/London node --test tests/*.test.js",
+    "check": "node --check src/dashboard.js && node --check src/background.js && npm test && npm run build",
+    "test:browser": "npm run build && node tests/browser.mjs"
+  },
+  "dependencies": {
+    "ical.js": "2.2.1"
+  },
+  "devDependencies": {
+    "esbuild": "0.25.12",
+    "@playwright/test": "1.56.1"
+  }
+}
