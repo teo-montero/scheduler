@@ -10,9 +10,21 @@ const $$ = selector => [...document.querySelectorAll(selector)];
 const icon = name => `<svg aria-hidden="true"><use href="#i-${name}"/></svg>`;
 const escape = value => String(value ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 const isExtension = Boolean(globalThis.chrome?.runtime?.id && chrome.storage?.local);
-const COLORS = ['#b5c7a1', '#d7c3aa', '#bcb0d0', '#a8c6ca', '#d4b4b5', '#c7cc99'];
-let state, currentWeek = weekStart(), currentView = 'week', selectedCourse = null, toastTimer, syncing = false, calendarSyncing = false;
+const CALENDAR_HOUR_HEIGHT = 72;
+const CALENDAR_MINUTE_HEIGHT = CALENDAR_HOUR_HEIGHT / 60;
+const COLORS = ['#5277a5', '#947147', '#7a68a2', '#43808a', '#a36572', '#777e40'];
+const VIEWS = {
+  week: { title: 'My week', description: 'Your timetable, study sessions and personal time, together.' },
+  tasks: { title: 'All tasks', description: 'Review deadlines, adjust estimates and keep track of your progress.' },
+  courses: { title: 'My modules', description: 'Your courses and their tasks in one place.' }
+};
+let state, currentWeek = weekStart(), currentView = 'week', selectedCourse = null, agendaDay = null, toastTimer, syncing = false, calendarSyncing = false;
 function courseColor(id) { const index = state.courses.findIndex(c => String(c.id) === String(id)); return COLORS[Math.max(0, index) % COLORS.length]; }
+function emptyMarkup(name, title, description, action = '') {
+  return `<div class="empty-state">${icon(name)}<strong class="empty-state-title">${escape(title)}</strong><p class="empty-state-copy">${escape(description)}</p>${action}</div>`;
+}
+const addTaskAction = () => `<button type="button" class="button secondary empty-state-action" data-add-task>${icon('plus')}Add task</button>`;
+const syncMoodleAction = () => `<button type="button" class="button secondary empty-state-action" data-sync-moodle>${icon('sync')}Sync Moodle</button>`;
 function toast(message, long = false) { $('#toast').textContent = message; $('#toast').classList.add('visible'); clearTimeout(toastTimer); toastTimer = setTimeout(() => $('#toast').classList.remove('visible'), long ? 10000 : 5000); }
 async function persist() {
   try {
@@ -43,7 +55,8 @@ function taskMarkup(task) {
   return `<article class="task-item ${task.completed ? 'task-completed' : ''}"><button class="task-check ${task.completed ? 'checked' : ''}" data-complete="${escape(task.id)}" aria-label="${task.completed ? 'Reopen' : 'Complete'} ${escape(task.title)}" aria-pressed="${task.completed}">${icon('check')}</button><div class="task-info"><div class="task-course"><span class="course-dot" style="--course-color:${courseColor(task.courseId)}"></span>${escape(task.courseName || 'Personal')}</div><button class="task-title" data-edit-task="${escape(task.id)}">${escape(task.title)}</button><div class="task-bottom"><span class="due-label ${task.completed ? '' : due.className}">${task.completed ? 'Completed' : escape(due.text)}</span><span class="task-estimate">${icon('clock')}${durationLabel(task.estimatedMinutes)}</span></div></div></article>`;
 }
 function render() {
-  $('#today-label').textContent = new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/London', weekday: 'long', day: 'numeric', month: 'long' }).format(new Date()).toUpperCase();
+  renderViewHeader();
+  $('#today-label').textContent = new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/London', weekday: 'long', day: 'numeric', month: 'long' }).format(new Date());
   $('#sample-banner').hidden = state.mode !== 'demo';
   $('#mode-badge').innerHTML = `<span></span>${state.mode === 'demo' ? 'Sample workspace' : 'Your workspace'}`;
   $('#mode-badge').classList.toggle('connected', state.mode !== 'demo');
@@ -51,32 +64,34 @@ function render() {
   const pending = state.tasks.filter(t => !t.completed), done = state.tasks.filter(t => t.completed).length;
   $('#nav-task-count').textContent = pending.length;
   $('#module-count').textContent = state.courses.length.toString().padStart(2, '0');
-  $('#sidebar-courses').innerHTML = state.courses.length ? state.courses.slice(0, 8).map(c => `<button class="sidebar-course ${String(selectedCourse) === String(c.id) ? 'selected' : ''}" data-course="${escape(c.id)}"><span class="course-dot" style="--course-color:${courseColor(c.id)}"></span><span>${escape(c.shortname || c.name)}<small>${escape(c.name)}</small></span></button>`).join('') : '<p class="field-help" style="padding:0 12px;font-size:10px;color:#98a18d">Sync Moodle to see your modules.</p>';
+  $('#sidebar-courses').innerHTML = state.courses.length ? state.courses.slice(0, 8).map(c => `<button class="sidebar-course ${String(selectedCourse) === String(c.id) ? 'selected' : ''}" data-course="${escape(c.id)}"><span class="course-dot" style="--course-color:${courseColor(c.id)}"></span><span>${escape(c.shortname || c.name)}<small>${escape(c.name)}</small></span></button>`).join('') : '<p class="sidebar-empty">Connect Moodle to see your modules.</p>';
   const events = weekEvents();
   const focusMinutes = events.filter(e => e.source === 'study').reduce((sum, e) => sum + (new Date(e.end) - new Date(e.start)) / 60000, 0);
   $('#stat-focus').innerHTML = `${durationLabel(focusMinutes)} <span>planned</span>`;
-  $('#stat-focus-detail').textContent = `${events.filter(e => e.source === 'study').length} focus sessions, with room to pause.`;
+  const sessions = events.filter(e => e.source === 'study').length;
+  $('#stat-focus-detail').textContent = `${sessions} study ${sessions === 1 ? 'session' : 'sessions'} this week`;
   $('#stat-tasks').innerHTML = `${pending.length} <span>${pending.length === 1 ? 'task' : 'tasks'} to go</span>`;
-  $('#stat-tasks-detail').textContent = done ? `${done} ${done === 1 ? 'task' : 'tasks'} already checked off. Nice work.` : 'One small step at a time.';
-  $('#stat-health').textContent = state.unscheduled.length ? `${state.unscheduled.length} need space` : pending.length ? 'Looking balanced' : 'A fresh start';
-  $('#stat-health-detail').textContent = state.unscheduled.length ? 'Some work won’t fit. Check your tasks.' : `${state.settings.breakMinutes}-minute breaks are built in.`;
+  $('#stat-tasks-detail').textContent = `${done} ${done === 1 ? 'task' : 'tasks'} completed`;
+  $('#stat-health').textContent = state.unscheduled.length ? 'Needs attention' : pending.length ? 'All work planned' : state.tasks.length ? 'All tasks complete' : 'No tasks yet';
+  $('#stat-health-detail').textContent = state.unscheduled.length ? `${state.unscheduled.length} ${state.unscheduled.length === 1 ? 'task needs' : 'tasks need'} more time` : `${state.settings.breakMinutes}-minute breaks between sessions`;
   $('#stat-health').classList.toggle('plan-warning', state.unscheduled.length > 0);
-  $('#plan-caption').textContent = state.mode === 'demo' ? 'Sample plan · connect your data to make it yours.' : state.unscheduled.length ? `${state.unscheduled.length} task${state.unscheduled.length === 1 ? '' : 's'} need more time before the deadline.` : 'Your plan leaves room for breaks.';
+  $('#plan-caption').textContent = state.mode === 'demo' ? 'Sample plan · connect your timetable and Moodle.' : state.unscheduled.length ? `${state.unscheduled.length} task${state.unscheduled.length === 1 ? '' : 's'} need more time before the deadline.` : 'Plan includes your commitments and study breaks.';
   $('#plan-caption').classList.toggle('plan-warning', state.unscheduled.length > 0);
   renderCalendar(events);
-  $('#upcoming-tasks').innerHTML = sortedTasks(pending).slice(0, 4).map(taskMarkup).join('') || `<div class="empty-state">${icon('check')}${state.tasks.length ? 'All caught up. Take a breath.' : 'A fresh page. Sync Moodle or add your first task.'}</div>`;
+  renderAgenda(events);
+  $('#upcoming-tasks').innerHTML = sortedTasks(pending).slice(0, 4).map(taskMarkup).join('') || emptyMarkup('check', state.tasks.length ? 'All tasks complete' : 'No tasks yet', state.tasks.length ? 'New deadlines will appear here.' : 'Add a task or connect Moodle to start planning.', addTaskAction());
   renderTasks(); renderCourses(); renderChat();
 }
 function renderCalendar(events) {
   $('#week-range').textContent = `${formatDate(atTime(currentWeek), { month: 'long' })} – ${formatDate(atTime(addDays(currentWeek, 6)), { month: 'long', year: 'numeric' })}`;
   const days = Array.from({ length: 7 }, (_, i) => addDays(currentWeek, i));
   const startHour = Math.min(8, state.settings.startHour), endHour = Math.max(19, state.settings.endHour);
-  const height = (endHour - startHour) * 60;
+  const height = (endHour - startHour) * CALENDAR_HOUR_HEIGHT;
   $('#calendar-head').innerHTML = `<div>GMT/BST</div>${days.map(key => `<div class="${key === dateKey() ? 'is-today' : ''}"><span class="day-name">${formatDate(atTime(key), { weekday: 'short' }).split(',')[0].split(' ')[0]}</span><span class="day-number">${Number(key.slice(-2))}</span></div>`).join('')}`;
-  const axis = `<div class="time-axis">${Array.from({ length: endHour - startHour }, (_, i) => `<span class="time-label" style="top:${i * 60}px">${String(startHour + i).padStart(2, '0')}:00</span>`).join('')}</div>`;
+  const axis = `<div class="time-axis">${Array.from({ length: endHour - startHour }, (_, i) => `<span class="time-label" style="top:${i * CALENDAR_HOUR_HEIGHT}px">${String(startHour + i).padStart(2, '0')}:00</span>`).join('')}</div>`;
   const columns = days.map((key, i) => {
     const dayStart = atTime(key, startHour).getTime(), dayEnd = atTime(key, endHour).getTime();
-    const items = events.filter(e => new Date(e.start).getTime() < dayEnd && new Date(e.end).getTime() > dayStart).map(e => ({ ...e, top: Math.max(0, (new Date(e.start) - dayStart) / 60000), bottom: Math.min(height, (new Date(e.end) - dayStart) / 60000) })).sort((a, b) => a.top - b.top || b.bottom - a.bottom);
+    const items = events.filter(e => new Date(e.start).getTime() < dayEnd && new Date(e.end).getTime() > dayStart).map(e => ({ ...e, top: Math.max(0, (new Date(e.start) - dayStart) / 60000 * CALENDAR_MINUTE_HEIGHT), bottom: Math.min(height, (new Date(e.end) - dayStart) / 60000 * CALENDAR_MINUTE_HEIGHT) })).sort((a, b) => a.top - b.top || b.bottom - a.bottom);
     // Assign lanes within each connected overlap group, so simultaneous classes remain visible.
     let group = [], groupEnd = -1;
     function assignGroup() {
@@ -90,13 +105,39 @@ function renderCalendar(events) {
       const h = Math.max(14, e.bottom - e.top - 3), cls = e.source === 'study' ? 'study' : e.source === 'personal' ? 'personal' : 'lecture';
       const time = e.allDay ? 'All day' : `${formatTime(e.start)}–${formatTime(e.end)}`;
       const location = e.source === 'study' ? `Focus · ${e.courseName || 'Personal'}` : e.location;
-      return `<button class="calendar-event ${cls} ${h < 32 ? 'short' : ''}" data-event="${escape(e.id)}" style="top:${e.top}px;height:${h}px;left:calc(${e.lane / e.lanes * 100}% + 3px);width:calc(${100 / e.lanes}% - 6px)" title="${escape(`${time} · ${e.title}${location ? ` · ${location}` : ''}`)}" aria-label="${escape(`${e.title}, ${time}`)}"><span class="event-time">${time}</span><strong>${escape(e.title)}</strong>${location && h > 55 ? `<span class="event-location">${escape(location)}</span>` : ''}</button>`;
+      return `<button class="calendar-event ${cls} ${h < 56 ? 'short' : ''}" data-event="${escape(e.id)}" style="top:${e.top}px;height:${h}px;left:calc(${e.lane / e.lanes * 100}% + 3px);width:calc(${100 / e.lanes}% - 6px)" title="${escape(`${time} · ${e.title}${location ? ` · ${location}` : ''}`)}" aria-label="${escape(`${e.title}, ${time}`)}"><span class="event-time">${time}</span><strong>${escape(e.title)}</strong>${location && h >= 76 ? `<span class="event-location">${escape(location)}</span>` : ''}</button>`;
     }).join('');
     const minute = minutesOfDay(new Date()) - startHour * 60;
-    const now = key === dateKey() && minute >= 0 && minute < height ? `<div class="now-line" style="top:${minute}px"></div>` : '';
-    return `<div class="day-column ${i > 4 ? 'weekend' : ''} ${key === dateKey() ? 'today' : ''}">${markup}${now}</div>`;
+    const now = key === dateKey() && minute >= 0 && minute * CALENDAR_MINUTE_HEIGHT < height ? `<div class="now-line" style="top:${minute * CALENDAR_MINUTE_HEIGHT}px"></div>` : '';
+    return `<div class="day-column ${i > 4 ? 'weekend' : ''} ${key === dateKey() ? 'today' : ''}" data-date="${key}">${markup}${now}</div>`;
   }).join('');
   $('#calendar-body').style.height = `${height}px`; $('#calendar-body').innerHTML = axis + columns;
+}
+function updateNowMarker() {
+  const startHour = Math.min(8, state.settings.startHour), endHour = Math.max(19, state.settings.endHour);
+  const minute = minutesOfDay(new Date()) - startHour * 60;
+  const column = $(`#calendar-body .day-column[data-date="${dateKey()}"]`);
+  let marker = $('#calendar-body .now-line');
+  if (!column || minute < 0 || minute >= (endHour - startHour) * 60) { marker?.remove(); return; }
+  if (marker?.parentElement !== column) { marker?.remove(); marker = null; }
+  if (!marker) { marker = document.createElement('div'); marker.className = 'now-line'; column.append(marker); }
+  marker.style.top = `${minute * CALENDAR_MINUTE_HEIGHT}px`;
+}
+function renderAgenda(events) {
+  const days = Array.from({ length: 7 }, (_, i) => addDays(currentWeek, i));
+  if (!days.includes(agendaDay)) agendaDay = days.includes(dateKey()) ? dateKey() : currentWeek;
+  const dayStart = atTime(agendaDay).getTime(), dayEnd = atTime(addDays(agendaDay, 1)).getTime();
+  const items = events.filter(e => new Date(e.start).getTime() < dayEnd && new Date(e.end).getTime() > dayStart)
+    .sort((a, b) => Number(Boolean(b.allDay)) - Number(Boolean(a.allDay)) || new Date(a.start) - new Date(b.start));
+  const dayButtons = days.map(key => `<button type="button" class="agenda-day ${key === agendaDay ? 'active' : ''}" data-agenda-day="${key}" aria-pressed="${key === agendaDay}" aria-label="${escape(formatDate(atTime(key), { weekday: 'long', month: 'long' }))}"${key === dateKey() ? ' aria-current="date"' : ''}><span>${new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/London', weekday: 'short' }).format(atTime(key))}</span><strong>${Number(key.slice(-2))}</strong></button>`).join('');
+  const markup = items.map(event => {
+    const kind = event.source === 'study' ? 'study' : event.source === 'personal' ? 'personal' : 'lecture';
+    const label = kind === 'study' ? 'Study session' : kind === 'personal' ? 'Personal time' : 'Timetable';
+    const time = event.allDay ? 'All day' : `${new Date(event.start).getTime() < dayStart ? '00:00' : formatTime(event.start)}–${new Date(event.end).getTime() >= dayEnd ? '24:00' : formatTime(event.end)}`;
+    const detail = kind === 'study' ? event.courseName : event.location;
+    return `<button type="button" class="agenda-event ${kind}" data-event="${escape(event.id)}" aria-label="${escape(`${event.title}, ${time}, ${label}`)}"><span class="agenda-event-time">${escape(time)}</span><span class="agenda-event-info"><strong>${escape(event.title)}</strong><span class="agenda-event-meta">${escape(label)}${detail ? ` · ${escape(detail)}` : ''}</span></span>${icon('chevron')}</button>`;
+  }).join('');
+  $('#calendar-agenda').innerHTML = `<div class="agenda-days" role="group" aria-label="Select a day">${dayButtons}</div><h3 class="agenda-date" id="agenda-date">${escape(formatDate(atTime(agendaDay), { weekday: 'long', month: 'long' }))}</h3><div class="agenda-events" role="group" aria-labelledby="agenda-date">${markup || `<div class="agenda-empty">${emptyMarkup('calendar', 'No sessions scheduled', 'Choose another day or add a task to your plan.', addTaskAction())}</div>`}</div>`;
 }
 function renderTasks() {
   const filter = $('#task-filter').value;
@@ -105,23 +146,36 @@ function renderTasks() {
   if (selectedCourse !== null) notice += `<div class="filtered-note">Showing ${escape(state.courses.find(c => String(c.id) === String(selectedCourse))?.shortname || 'selected module')}<button data-clear-course>Show all modules</button></div>`;
   const relevantWarnings = state.unscheduled.filter(u => tasks.some(t => t.id === u.taskId));
   if (relevantWarnings.length) notice += `<div class="filtered-note plan-warning">${relevantWarnings.map(u => `${escape(state.tasks.find(t => t.id === u.taskId)?.title)}: ${durationLabel(u.minutes)} unplanned — ${escape(u.reason.toLowerCase())}.`).join('<br>')}</div>`;
-  $('#all-tasks').innerHTML = notice + (tasks.length ? tasks.map(taskMarkup).join('') : `<div class="empty-state">${icon('check')}No tasks here. Enjoy a little breathing room.</div>`);
+  $('#all-tasks').innerHTML = notice + (tasks.length ? tasks.map(taskMarkup).join('') : emptyMarkup('check', filter === 'completed' ? 'No completed tasks yet' : 'No tasks to show', filter === 'completed' ? 'Tasks you complete will appear here.' : selectedCourse !== null ? 'This module has no tasks matching your filter.' : 'Add a task or connect Moodle to start planning.', filter === 'completed' ? '' : addTaskAction()));
 }
 function renderCourses() {
   $('#course-cards').innerHTML = state.courses.map(c => {
     const tasks = state.tasks.filter(t => String(t.courseId) === String(c.id)), completed = tasks.filter(t => t.completed).length;
-    return `<article class="course-card"><span class="course-code"><span class="course-dot" style="--course-color:${courseColor(c.id)}"></span>${escape(c.shortname)}</span><h3>${escape(c.name)}</h3><div class="course-progress"><span style="width:${tasks.length ? completed / tasks.length * 100 : 0}%"></span></div><p>${completed} of ${tasks.length} tasks completed</p><button data-course="${escape(c.id)}">View module tasks ↗</button></article>`;
-  }).join('') || `<div class="empty-state">${icon('book')}Sync Moodle to bring your modules into one space.</div>`;
+    return `<article class="course-card"><span class="course-code"><span class="course-dot" style="--course-color:${courseColor(c.id)}"></span>${escape(c.shortname)}</span><h3>${escape(c.name)}</h3><div class="course-progress" aria-hidden="true"><span style="width:${tasks.length ? completed / tasks.length * 100 : 0}%"></span></div><p>${completed} of ${tasks.length} tasks completed</p><button data-course="${escape(c.id)}">View module tasks ${icon('arrow')}</button></article>`;
+  }).join('') || emptyMarkup('book', 'Your modules will appear here', 'Connect Moodle to import your courses and deadlines.', syncMoodleAction());
 }
 function renderChat() {
   $('#chat-messages').innerHTML = state.messages.slice(-12).map(m => `<div class="chat-message ${m.role === 'user' ? 'user' : ''}">${escape(m.text)}</div>`).join('');
   $('#chat-messages').scrollTop = $('#chat-messages').scrollHeight;
 }
+function renderViewHeader() {
+  const content = VIEWS[currentView];
+  document.body.dataset.currentView = currentView;
+  $('#page-title').textContent = content.title;
+  $('#page-description').textContent = content.description;
+  $('#breadcrumb-view').textContent = content.title;
+  $('#focus-summary').hidden = currentView !== 'week';
+  $$('.nav-item[data-view]').forEach(button => {
+    const active = button.dataset.view === currentView;
+    button.classList.toggle('active', active);
+    if (active) button.setAttribute('aria-current', 'page');
+    else button.removeAttribute('aria-current');
+  });
+}
 function setView(view) {
   currentView = view;
   $('#week-view').hidden = view !== 'week'; $('#tasks-view').hidden = view !== 'tasks'; $('#courses-view').hidden = view !== 'courses';
-  $$('.nav-item[data-view]').forEach(b => b.classList.toggle('active', b.dataset.view === view));
-  $('#breadcrumb-view').textContent = { week: 'My week', tasks: 'All tasks', courses: 'My modules' }[view];
+  renderViewHeader();
 }
 function openSettings() {
   $('#calendar-error').textContent = '';
@@ -144,15 +198,15 @@ function openTask(task = null) {
   ['task-title', 'task-course', 'task-due'].forEach(id => { $(`#${id}`).disabled = Boolean(fromMoodle); });
   $('#task-source-note').hidden = !fromMoodle;
   $('#delete-task-button').hidden = !task || fromMoodle;
-  $('#task-dialog-title').textContent = task ? 'A little adjustment.' : 'Make a little progress.';
-  $('#task-dialog').showModal(); $('#task-title').focus();
+  $('#task-dialog-title').textContent = task ? 'Edit task' : 'Add task';
+  $('#task-dialog').showModal(); $('#task-form input:not([type="hidden"]):not(:disabled)').focus();
 }
 function safeMoodleUrl(value) { try { const url = new URL(value); return url.protocol === 'https:' && url.hostname === 'moodle.ucl.ac.uk' ? url.href : null; } catch { return null; } }
 function openEvent(id) {
   const event = [...state.events, ...state.blocks, ...state.blocked].find(e => e.id === id);
   if (!event) return;
   const task = state.tasks.find(t => t.id === event.taskId), url = safeMoodleUrl(task?.url);
-  $('#event-detail').innerHTML = `<span class="task-course">${event.source === 'study' ? 'FOCUS SESSION' : event.source === 'personal' ? 'PERSONAL TIME' : 'UCL TIMETABLE'}</span><h2>${escape(event.title)}</h2><p>${formatDate(event.start, { weekday: 'long' })}<br>${event.allDay ? 'All day' : `${formatTime(event.start)} – ${formatTime(event.end)}`} · London time${event.location ? `<br>${escape(event.location)}` : ''}</p>${task ? `<p class="event-detail-note">Part of ${durationLabel(task.estimatedMinutes)} of planned work${task.dueDate ? ` · due ${formatDate(task.dueDate)}, ${formatTime(task.dueDate)}` : ''}. Complete the task when all its work is done.</p><button class="button primary" data-complete="${escape(task.id)}">${icon('check')}Mark task complete</button> <button class="button secondary" data-edit-task="${escape(task.id)}">Edit task</button>${url ? `<p><a class="text-link" href="${escape(url)}" target="_blank" rel="noopener noreferrer">Open in Moodle ↗</a></p>` : ''}` : event.source === 'personal' ? `<button class="button secondary" data-remove-block="${escape(event.id)}">Remove personal time</button>` : ''}`;
+  $('#event-detail').innerHTML = `<h2 id="event-title">${escape(event.title)}</h2><p>${event.source === 'study' ? 'Study session' : event.source === 'personal' ? 'Personal time' : 'UCL timetable'} · ${formatDate(event.start, { weekday: 'long' })}<br>${event.allDay ? 'All day' : `${formatTime(event.start)} – ${formatTime(event.end)}`} · London time${event.location ? `<br>${escape(event.location)}` : ''}</p>${task ? `<p class="event-detail-note">Part of ${durationLabel(task.estimatedMinutes)} of planned work${task.dueDate ? ` · due ${formatDate(task.dueDate)}, ${formatTime(task.dueDate)}` : ''}. Complete the task when all its work is done.</p><button class="button primary" data-complete="${escape(task.id)}">${icon('check')}Mark task complete</button> <button class="button secondary" data-edit-task="${escape(task.id)}">Edit task</button>${url ? `<p><a class="text-link" href="${escape(url)}" target="_blank" rel="noopener noreferrer">Open in Moodle ${icon('external')}</a></p>` : ''}` : event.source === 'personal' ? `<button class="button secondary" data-remove-block="${escape(event.id)}">Remove personal time</button>` : ''}`;
   $('#event-dialog').showModal();
 }
 async function extensionRequest(message) {
@@ -253,6 +307,9 @@ async function submitChat(text) {
 }
 
 async function init() {
+  document.body.dataset.input = 'pointer';
+  document.addEventListener('keydown', () => { document.body.dataset.input = 'keyboard'; }, { capture: true });
+  document.addEventListener('pointerdown', () => { document.body.dataset.input = 'pointer'; }, { capture: true });
   try {
     state = isExtension ? (await chrome.storage.local.get('workspace')).workspace : JSON.parse(localStorage.getItem('studyspace-workspace-v1') || 'null');
     if (state?.version !== 1 || !Array.isArray(state.tasks) || !Array.isArray(state.events)) state = createDemo();
@@ -263,25 +320,43 @@ async function init() {
     if (hour >= 6) $('#end-hour').add(new Option(`${String(hour).padStart(2, '0')}:00`, hour));
   }
   render();
-  $$('[data-view]').forEach(b => b.addEventListener('click', () => { selectedCourse = null; setView(b.dataset.view); render(); }));
+  $$('.nav-item[data-view]').forEach(b => b.addEventListener('click', () => { selectedCourse = null; setView(b.dataset.view); render(); }));
   $('#see-all-tasks').addEventListener('click', () => { selectedCourse = null; setView('tasks'); renderTasks(); });
   $('#all-modules-button').addEventListener('click', () => { selectedCourse = null; setView('courses'); render(); });
   $('#task-filter').addEventListener('change', renderTasks);
-  $('#previous-week').addEventListener('click', () => { currentWeek = addDays(currentWeek, -7); render(); });
-  $('#next-week').addEventListener('click', () => { currentWeek = addDays(currentWeek, 7); render(); });
-  $('#today-button').addEventListener('click', () => { currentWeek = weekStart(); render(); });
-  ['settings-button', 'connections-button', 'start-button', 'mode-badge'].forEach(id => $(`#${id}`).addEventListener('click', openSettings));
+  $('#previous-week').addEventListener('click', () => { currentWeek = addDays(currentWeek, -7); agendaDay = null; render(); });
+  $('#next-week').addEventListener('click', () => { currentWeek = addDays(currentWeek, 7); agendaDay = null; render(); });
+  $('#today-button').addEventListener('click', () => { currentWeek = weekStart(); agendaDay = dateKey(); render(); });
+  ['settings-button', 'connections-button', 'mode-badge'].forEach(id => $(`#${id}`).addEventListener('click', openSettings));
   ['add-task-button', 'quick-add-task'].forEach(id => $(`#${id}`).addEventListener('click', () => openTask()));
   $$('.close-dialog').forEach(b => b.addEventListener('click', () => b.closest('dialog').close()));
   $$('dialog').forEach(dialog => dialog.addEventListener('click', e => { if (e.target === dialog) { const r = dialog.getBoundingClientRect(); if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) dialog.close(); } }));
   document.addEventListener('click', async e => {
     const complete = e.target.closest('[data-complete]'), edit = e.target.closest('[data-edit-task]'), course = e.target.closest('[data-course]'), event = e.target.closest('[data-event]'), remove = e.target.closest('[data-remove-block]');
-    if (complete) { const task = state.tasks.find(t => t.id === complete.dataset.complete); if (!task) return; task.completed = !task.completed; $('#event-dialog').close(); await changeAndRender(); toast(task.completed ? 'One less thing on your mind. Task complete.' : 'Task reopened and added back to your plan.'); }
+    if (complete) {
+      const task = state.tasks.find(t => t.id === complete.dataset.complete); if (!task) return;
+      const list = complete.closest('#all-tasks, #upcoming-tasks');
+      const index = list ? [...list.querySelectorAll('[data-complete]')].indexOf(complete) : -1;
+      task.completed = !task.completed; $('#event-dialog').close(); await changeAndRender();
+      if (list && document.body.dataset.input === 'keyboard') {
+        const remaining = [...list.querySelectorAll('[data-complete]')];
+        const next = remaining.find(button => button.dataset.complete === task.id) || remaining[Math.min(index, remaining.length - 1)];
+        (next || $('#page-title')).focus({ preventScroll: true });
+      }
+      toast(task.completed ? 'Task complete. Your plan has been updated.' : 'Task reopened and added back to your plan.');
+    }
     if (edit) { const task = state.tasks.find(t => t.id === edit.dataset.editTask); if (task) { $('#event-dialog').close(); openTask(task); } }
-    if (course) { selectedCourse = course.dataset.course; $('#task-filter').value = 'all'; setView('tasks'); render(); }
+    if (course) { selectedCourse = course.dataset.course; $('#task-filter').value = 'all'; setView('tasks'); render(); if (document.body.dataset.input === 'keyboard') $('#page-title').focus({ preventScroll: true }); }
     if (e.target.closest('[data-clear-course]')) { selectedCourse = null; render(); }
     if (event) openEvent(event.dataset.event);
     if (remove) { state.blocked = state.blocked.filter(b => b.id !== remove.dataset.removeBlock); $('#event-dialog').close(); await changeAndRender(); renderBlocked(); toast('Personal time removed. Your plan has been updated.'); }
+    const day = e.target.closest('[data-agenda-day]');
+    if (day) {
+      agendaDay = day.dataset.agendaDay; renderAgenda(weekEvents());
+      $(`#calendar-agenda [data-agenda-day="${agendaDay}"]`).focus({ preventScroll: true });
+    }
+    if (e.target.closest('[data-add-task]')) openTask();
+    if (e.target.closest('[data-sync-moodle]')) await syncMoodle();
   });
   $('#generate-button').addEventListener('click', async () => { await changeAndRender(); toast(state.unscheduled.length ? `Plan updated. ${state.unscheduled.length} tasks need more time; see All tasks for details.` : 'A fresh plan, with room for breaks. You’re ready to go.'); });
   $('#sync-button').addEventListener('click', syncMoodle);
@@ -303,7 +378,7 @@ async function init() {
   $('#view-imported-calendar').addEventListener('click', () => {
     const next = state.events.find(e => new Date(e.end) >= new Date());
     currentWeek = weekStart(next?.start || new Date()); setView('week'); render(); $('#settings-dialog').close();
-    $('#week-view').scrollIntoView({ block: 'start', behavior: 'smooth' });
+    $('#week-view').scrollIntoView({ block: 'start', behavior: 'auto' });
   });
   $('#ics-file').addEventListener('change', async e => {
     const file = e.target.files[0]; if (!file) return;
@@ -342,6 +417,6 @@ async function init() {
   $('#chat-form').addEventListener('submit', async e => { e.preventDefault(); const text = $('#chat-input').value.trim(); if (!text) return; $('#chat-input').value = ''; await submitChat(text); });
   $$('[data-suggestion]').forEach(b => b.addEventListener('click', () => { $('#chat-input').value = b.dataset.suggestion; $('#chat-input').focus(); }));
   // Refresh the current-time marker without rescheduling an existing plan.
-  setInterval(() => { if (document.visibilityState === 'visible' && currentView === 'week') renderCalendar(weekEvents()); }, 60000);
+  setInterval(() => { if (document.visibilityState === 'visible' && currentView === 'week') updateNowMarker(); }, 60000);
 }
 init().catch(() => { document.body.innerHTML = '<main style="margin:40px"><h1>Let’s make a fresh start.</h1><p>The workspace could not load. Reload the extension and try again.</p></main>'; });

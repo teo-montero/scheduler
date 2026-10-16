@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#182338">
+  <title>Set up your space · Study Space</title>
+  <link rel="icon" href="assets/mark.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="setup.css">
+</head>
+<body class="setup-page">
+  <a class="skip-link" href="#setup-title-1">Skip to setup</a>
+  <div class="setup-shell">
+    <aside class="setup-sidebar" aria-label="Setup progress">
+      <a class="brand" href="dashboard.html" aria-label="Study Space home"><img src="assets/mark.svg" width="34" height="34" alt=""><span>study<span class="brand-light">space</span></span></a>
+      <div class="setup-intro"><h2>A week that works for you.</h2><p>Start with your classes. Make room for everything else.</p></div>
+      <ol class="setup-steps">
+        <li aria-current="step"><span class="step-number">1</span><span>Timetable<small>Your university schedule</small></span></li>
+        <li><span class="step-number">2</span><span>Moodle<small>Your courses and deadlines</small></span></li>
+        <li><span class="step-number">3</span><span>Study preferences<small>Your commute and study space</small></span></li>
+        <li><span class="step-number">4</span><span>Weekly activities<small>Time for the rest of your life</small></span></li>
+      </ol>
+      <p class="setup-sidebar-note">Made for UCL students.<br>A little room to breathe.</p>
+    </aside>
+    <main class="setup-main">
+      <header class="setup-top"><span>Set up your space</span><a href="dashboard.html">Skip setup <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-5-5 5 5-5 5"/></svg></a></header>
+      <p class="setup-preview"><strong>Preview</strong> Explore the steps. Answers aren’t saved and connections aren’t activated yet.</p>
+      <form id="setup-form" novalidate>
+        <section class="setup-panel" data-step="0" aria-labelledby="setup-title-1">
+          <h1 id="setup-title-1" tabindex="-1">Connect your UCL timetable</h1>
+          <p class="setup-description">Start with your lectures, seminars and classes. Add your timetable subscription link below.</p>
+          <label class="setup-label" for="setup-timetable">Timetable URL</label>
+          <input id="setup-timetable" name="timetable" type="url" placeholder="https://timetable.apps.ucl.ac.uk/icalendar/…" autocomplete="off" aria-describedby="timetable-help">
+          <p class="setup-help" id="timetable-help">Use your iCalendar subscription URL, rather than the address of the timetable webpage.</p>
+          <details class="setup-explainer"><summary>Where can I find my link?</summary><p>Open your UCL timetable and look for its iCalendar subscription or calendar export option. Copy the subscription URL and paste it here.</p></details>
+          <p class="setup-optional">Don’t have it handy? You can continue without it.</p>
+        </section>
+        <section class="setup-panel" data-step="1" aria-labelledby="setup-title-2" hidden>
+          <h1 id="setup-title-2" tabindex="-1">Connect Moodle</h1>
+          <p class="setup-description">Keep your coursework alongside your classes. Open UCL Moodle and sign in with your university account.</p>
+          <div class="setup-moodle"><span class="integration-logo moodle-logo" aria-hidden="true">m</span><div><h2>UCL Moodle</h2><p>Courses, assignments and deadlines</p></div></div>
+          <a id="setup-moodle-link" class="button primary" href="https://moodle.ucl.ac.uk/my/" target="_blank" rel="noopener noreferrer">Open UCL Moodle <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3h7v7m0-7L10 14M10 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-5"/></svg></a>
+          <p class="setup-help">Opens in a new tab, so you can return to finish setup.</p>
+          <p class="setup-connection-note">Opening Moodle won’t connect or import anything in this preview.</p>
+        </section>
+        <section class="setup-panel" data-step="2" aria-labelledby="setup-title-3" hidden>
+          <h1 id="setup-title-3" tabindex="-1">Make it fit your day</h1>
+          <p class="setup-description">A little context about getting to university and where you prefer to study.</p>
+          <label class="setup-label" for="setup-commute">How far away do you live from uni?</label>
+          <div class="setup-unit-field"><input id="setup-commute" name="commute" type="number" min="0" max="300" step="1" placeholder="e.g. 30" inputmode="numeric" aria-describedby="commute-help"><span>minutes</span></div>
+          <p class="setup-help" id="commute-help">Your usual one-way journey to campus, door to door.</p>
+          <fieldset class="study-choice"><legend>Would you rather study at home or on campus?</legend><div class="study-choice-options">
+            <label><input type="radio" name="study-place" value="home"><span><strong>At home</strong><small>My own space to focus</small></span></label>
+            <label><input type="radio" name="study-place" value="campus"><span><strong>On campus</strong><small>Stay close to my classes</small></span></label>
+          </div></fieldset>
+          <p class="setup-optional">Both answers are optional.</p>
+        </section>
+        <section class="setup-panel" data-step="3" aria-labelledby="setup-title-4" hidden>
+          <h1 id="setup-title-4" tabindex="-1">Make room for your week</h1>
+          <p class="setup-description">Add regular commitments you’d like your calendar to account for: sport, a job, societies or time with friends.</p>
+          <div id="setup-activities"></div>
+          <div id="activities-empty" class="setup-activities-empty"><h2>What’s already part of your routine?</h2><p>Add an activity and choose the days and times it repeats each week.</p></div>
+          <button id="add-activity" type="button" class="button secondary"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>Add weekly activity</button>
+          <p class="setup-help">Times use London time. Leave this empty if you have nothing to add.</p>
+          <p id="activity-announcement" class="sr-only" role="status" aria-live="polite"></p>
+        </section>
+        <footer class="setup-actions"><button id="setup-back" type="button" class="button secondary" disabled>Back</button><span id="setup-progress">Step 1 of 4</span><button id="setup-next" type="submit" class="button primary">Continue <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-5-5 5 5-5 5"/></svg></button></footer>
+      </form>
+      <noscript><p class="setup-help">Enable JavaScript to explore the setup steps, or <a class="text-link" href="dashboard.html">open your workspace</a>.</p></noscript>
+    </main>
+  </div>
+  <script type="module" src="setup.js"></script>
+</body>
+</html>

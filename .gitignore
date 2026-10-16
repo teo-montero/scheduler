@@ -18,3 +18,8 @@ test-results/
 *.key
 *.p12
 *.pfx
+
+# Local visual review captures
+.impeccable/review/
+
+/setup.js

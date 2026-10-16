@@ -1,0 +1,677 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-16T15:18:35.499Z",
+  "title": "Design System: Study Space",
+  "extensions": {
+    "colorMeta": {
+      "bg": {
+        "role": "neutral",
+        "displayName": "Workspace canvas",
+        "tonalRamp": [
+          "oklch(15.00% 0.0054 274.97)",
+          "oklch(26.43% 0.0054 274.97)",
+          "oklch(37.86% 0.0054 274.97)",
+          "oklch(49.29% 0.0054 274.97)",
+          "oklch(60.71% 0.0054 274.97)",
+          "oklch(72.14% 0.0054 274.97)",
+          "oklch(83.57% 0.0054 274.97)",
+          "oklch(95.00% 0.0054 274.97)"
+        ]
+      },
+      "paper": {
+        "role": "neutral",
+        "displayName": "White paper",
+        "tonalRamp": [
+          "oklch(15.00% 0.0000 89.88)",
+          "oklch(26.43% 0.0000 89.88)",
+          "oklch(37.86% 0.0000 89.88)",
+          "oklch(49.29% 0.0000 89.88)",
+          "oklch(60.71% 0.0000 89.88)",
+          "oklch(72.14% 0.0000 89.88)",
+          "oklch(83.57% 0.0000 89.88)",
+          "oklch(95.00% 0.0000 89.88)"
+        ]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Content ink",
+        "tonalRamp": [
+          "oklch(15.00% 0.0379 262.80)",
+          "oklch(26.43% 0.0379 262.80)",
+          "oklch(37.86% 0.0379 262.80)",
+          "oklch(49.29% 0.0379 262.80)",
+          "oklch(60.71% 0.0379 262.80)",
+          "oklch(72.14% 0.0379 262.80)",
+          "oklch(83.57% 0.0379 262.80)",
+          "oklch(95.00% 0.0379 262.80)"
+        ]
+      },
+      "muted": {
+        "role": "neutral",
+        "displayName": "Supporting text",
+        "tonalRamp": [
+          "oklch(15.00% 0.0328 261.38)",
+          "oklch(26.43% 0.0328 261.38)",
+          "oklch(37.86% 0.0328 261.38)",
+          "oklch(49.29% 0.0328 261.38)",
+          "oklch(60.71% 0.0328 261.38)",
+          "oklch(72.14% 0.0328 261.38)",
+          "oklch(83.57% 0.0328 261.38)",
+          "oklch(95.00% 0.0328 261.38)"
+        ]
+      },
+      "line": {
+        "role": "neutral",
+        "displayName": "Panel divider",
+        "tonalRamp": [
+          "oklch(15.00% 0.0130 266.70)",
+          "oklch(26.43% 0.0130 266.70)",
+          "oklch(37.86% 0.0130 266.70)",
+          "oklch(49.29% 0.0130 266.70)",
+          "oklch(60.71% 0.0130 266.70)",
+          "oklch(72.14% 0.0130 266.70)",
+          "oklch(83.57% 0.0130 266.70)",
+          "oklch(95.00% 0.0130 266.70)"
+        ]
+      },
+      "line-soft": {
+        "role": "neutral",
+        "displayName": "Quiet divider",
+        "tonalRamp": [
+          "oklch(15.00% 0.0074 260.73)",
+          "oklch(26.43% 0.0074 260.73)",
+          "oklch(37.86% 0.0074 260.73)",
+          "oklch(49.29% 0.0074 260.73)",
+          "oklch(60.71% 0.0074 260.73)",
+          "oklch(72.14% 0.0074 260.73)",
+          "oklch(83.57% 0.0074 260.73)",
+          "oklch(95.00% 0.0074 260.73)"
+        ]
+      },
+      "accent": {
+        "role": "primary",
+        "displayName": "Action blue",
+        "tonalRamp": [
+          "oklch(15.00% 0.1880 267.16)",
+          "oklch(26.43% 0.1880 267.16)",
+          "oklch(37.86% 0.1880 267.16)",
+          "oklch(49.29% 0.1880 267.16)",
+          "oklch(60.71% 0.1880 267.16)",
+          "oklch(72.14% 0.1880 267.16)",
+          "oklch(83.57% 0.1880 267.16)",
+          "oklch(95.00% 0.1880 267.16)"
+        ]
+      },
+      "accent-hover": {
+        "role": "primary",
+        "displayName": "Action blue hover",
+        "tonalRamp": [
+          "oklch(15.00% 0.1697 266.78)",
+          "oklch(26.43% 0.1697 266.78)",
+          "oklch(37.86% 0.1697 266.78)",
+          "oklch(49.29% 0.1697 266.78)",
+          "oklch(60.71% 0.1697 266.78)",
+          "oklch(72.14% 0.1697 266.78)",
+          "oklch(83.57% 0.1697 266.78)",
+          "oklch(95.00% 0.1697 266.78)"
+        ]
+      },
+      "accent-soft": {
+        "role": "primary",
+        "displayName": "Soft action blue",
+        "tonalRamp": [
+          "oklch(15.00% 0.0193 273.24)",
+          "oklch(26.43% 0.0193 273.24)",
+          "oklch(37.86% 0.0193 273.24)",
+          "oklch(49.29% 0.0193 273.24)",
+          "oklch(60.71% 0.0193 273.24)",
+          "oklch(72.14% 0.0193 273.24)",
+          "oklch(83.57% 0.0193 273.24)",
+          "oklch(95.00% 0.0193 273.24)"
+        ]
+      },
+      "sidebar-bg": {
+        "role": "neutral",
+        "displayName": "Midnight navigation",
+        "tonalRamp": [
+          "oklch(15.00% 0.0428 262.63)",
+          "oklch(26.43% 0.0428 262.63)",
+          "oklch(37.86% 0.0428 262.63)",
+          "oklch(49.29% 0.0428 262.63)",
+          "oklch(60.71% 0.0428 262.63)",
+          "oklch(72.14% 0.0428 262.63)",
+          "oklch(83.57% 0.0428 262.63)",
+          "oklch(95.00% 0.0428 262.63)"
+        ]
+      },
+      "sidebar-ink": {
+        "role": "neutral",
+        "displayName": "Navigation text",
+        "tonalRamp": [
+          "oklch(15.00% 0.0207 264.46)",
+          "oklch(26.43% 0.0207 264.46)",
+          "oklch(37.86% 0.0207 264.46)",
+          "oklch(49.29% 0.0207 264.46)",
+          "oklch(60.71% 0.0207 264.46)",
+          "oklch(72.14% 0.0207 264.46)",
+          "oklch(83.57% 0.0207 264.46)",
+          "oklch(95.00% 0.0207 264.46)"
+        ]
+      },
+      "sidebar-muted": {
+        "role": "neutral",
+        "displayName": "Supporting navigation text",
+        "tonalRamp": [
+          "oklch(15.00% 0.0343 262.66)",
+          "oklch(26.43% 0.0343 262.66)",
+          "oklch(37.86% 0.0343 262.66)",
+          "oklch(49.29% 0.0343 262.66)",
+          "oklch(60.71% 0.0343 262.66)",
+          "oklch(72.14% 0.0343 262.66)",
+          "oklch(83.57% 0.0343 262.66)",
+          "oklch(95.00% 0.0343 262.66)"
+        ]
+      },
+      "success": {
+        "role": "secondary",
+        "displayName": "Success green",
+        "tonalRamp": [
+          "oklch(15.00% 0.0711 167.02)",
+          "oklch(26.43% 0.0711 167.02)",
+          "oklch(37.86% 0.0711 167.02)",
+          "oklch(49.29% 0.0711 167.02)",
+          "oklch(60.71% 0.0711 167.02)",
+          "oklch(72.14% 0.0711 167.02)",
+          "oklch(83.57% 0.0711 167.02)",
+          "oklch(95.00% 0.0711 167.02)"
+        ]
+      },
+      "warning": {
+        "role": "secondary",
+        "displayName": "Warning amber",
+        "tonalRamp": [
+          "oklch(15.00% 0.1014 62.03)",
+          "oklch(26.43% 0.1014 62.03)",
+          "oklch(37.86% 0.1014 62.03)",
+          "oklch(49.29% 0.1014 62.03)",
+          "oklch(60.71% 0.1014 62.03)",
+          "oklch(72.14% 0.1014 62.03)",
+          "oklch(83.57% 0.1014 62.03)",
+          "oklch(95.00% 0.1014 62.03)"
+        ]
+      },
+      "danger": {
+        "role": "secondary",
+        "displayName": "Error red",
+        "tonalRamp": [
+          "oklch(15.00% 0.1540 24.34)",
+          "oklch(26.43% 0.1540 24.34)",
+          "oklch(37.86% 0.1540 24.34)",
+          "oklch(49.29% 0.1540 24.34)",
+          "oklch(60.71% 0.1540 24.34)",
+          "oklch(72.14% 0.1540 24.34)",
+          "oklch(83.57% 0.1540 24.34)",
+          "oklch(95.00% 0.1540 24.34)"
+        ]
+      },
+      "lecture-bg": {
+        "role": "secondary",
+        "displayName": "Timetable fill",
+        "tonalRamp": [
+          "oklch(15.00% 0.0116 153.67)",
+          "oklch(26.43% 0.0116 153.67)",
+          "oklch(37.86% 0.0116 153.67)",
+          "oklch(49.29% 0.0116 153.67)",
+          "oklch(60.71% 0.0116 153.67)",
+          "oklch(72.14% 0.0116 153.67)",
+          "oklch(83.57% 0.0116 153.67)",
+          "oklch(95.00% 0.0116 153.67)"
+        ]
+      },
+      "lecture-ink": {
+        "role": "secondary",
+        "displayName": "Timetable text",
+        "tonalRamp": [
+          "oklch(15.00% 0.0650 155.92)",
+          "oklch(26.43% 0.0650 155.92)",
+          "oklch(37.86% 0.0650 155.92)",
+          "oklch(49.29% 0.0650 155.92)",
+          "oklch(60.71% 0.0650 155.92)",
+          "oklch(72.14% 0.0650 155.92)",
+          "oklch(83.57% 0.0650 155.92)",
+          "oklch(95.00% 0.0650 155.92)"
+        ]
+      },
+      "study-bg": {
+        "role": "secondary",
+        "displayName": "Study fill",
+        "tonalRamp": [
+          "oklch(15.00% 0.0190 276.35)",
+          "oklch(26.43% 0.0190 276.35)",
+          "oklch(37.86% 0.0190 276.35)",
+          "oklch(49.29% 0.0190 276.35)",
+          "oklch(60.71% 0.0190 276.35)",
+          "oklch(72.14% 0.0190 276.35)",
+          "oklch(83.57% 0.0190 276.35)",
+          "oklch(95.00% 0.0190 276.35)"
+        ]
+      },
+      "study-ink": {
+        "role": "secondary",
+        "displayName": "Study text",
+        "tonalRamp": [
+          "oklch(15.00% 0.1368 268.80)",
+          "oklch(26.43% 0.1368 268.80)",
+          "oklch(37.86% 0.1368 268.80)",
+          "oklch(49.29% 0.1368 268.80)",
+          "oklch(60.71% 0.1368 268.80)",
+          "oklch(72.14% 0.1368 268.80)",
+          "oklch(83.57% 0.1368 268.80)",
+          "oklch(95.00% 0.1368 268.80)"
+        ]
+      },
+      "personal-bg": {
+        "role": "secondary",
+        "displayName": "Personal-time fill",
+        "tonalRamp": [
+          "oklch(15.00% 0.0259 76.80)",
+          "oklch(26.43% 0.0259 76.80)",
+          "oklch(37.86% 0.0259 76.80)",
+          "oklch(49.29% 0.0259 76.80)",
+          "oklch(60.71% 0.0259 76.80)",
+          "oklch(72.14% 0.0259 76.80)",
+          "oklch(83.57% 0.0259 76.80)",
+          "oklch(95.00% 0.0259 76.80)"
+        ]
+      },
+      "personal-ink": {
+        "role": "secondary",
+        "displayName": "Personal-time text",
+        "tonalRamp": [
+          "oklch(15.00% 0.0936 67.56)",
+          "oklch(26.43% 0.0936 67.56)",
+          "oklch(37.86% 0.0936 67.56)",
+          "oklch(49.29% 0.0936 67.56)",
+          "oklch(60.71% 0.0936 67.56)",
+          "oklch(72.14% 0.0936 67.56)",
+          "oklch(83.57% 0.0936 67.56)",
+          "oklch(95.00% 0.0936 67.56)"
+        ]
+      },
+      "focus-ring": {
+        "role": "neutral",
+        "displayName": "Focus Ring",
+        "tonalRamp": [
+          "oklch(15.00% 0.1820 267.65)",
+          "oklch(26.43% 0.1820 267.65)",
+          "oklch(37.86% 0.1820 267.65)",
+          "oklch(49.29% 0.1820 267.65)",
+          "oklch(60.71% 0.1820 267.65)",
+          "oklch(72.14% 0.1820 267.65)",
+          "oklch(83.57% 0.1820 267.65)",
+          "oklch(95.00% 0.1820 267.65)"
+        ]
+      },
+      "nav-active": {
+        "role": "neutral",
+        "displayName": "Nav Active",
+        "tonalRamp": [
+          "oklch(15.00% 0.0695 263.28)",
+          "oklch(26.43% 0.0695 263.28)",
+          "oklch(37.86% 0.0695 263.28)",
+          "oklch(49.29% 0.0695 263.28)",
+          "oklch(60.71% 0.0695 263.28)",
+          "oklch(72.14% 0.0695 263.28)",
+          "oklch(83.57% 0.0695 263.28)",
+          "oklch(95.00% 0.0695 263.28)"
+        ]
+      },
+      "nav-hover": {
+        "role": "neutral",
+        "displayName": "Nav Hover",
+        "tonalRamp": [
+          "oklch(15.00% 0.0497 262.30)",
+          "oklch(26.43% 0.0497 262.30)",
+          "oklch(37.86% 0.0497 262.30)",
+          "oklch(49.29% 0.0497 262.30)",
+          "oklch(60.71% 0.0497 262.30)",
+          "oklch(72.14% 0.0497 262.30)",
+          "oklch(83.57% 0.0497 262.30)",
+          "oklch(95.00% 0.0497 262.30)"
+        ]
+      },
+      "secondary-ink": {
+        "role": "neutral",
+        "displayName": "Secondary Ink",
+        "tonalRamp": [
+          "oklch(15.00% 0.0419 263.17)",
+          "oklch(26.43% 0.0419 263.17)",
+          "oklch(37.86% 0.0419 263.17)",
+          "oklch(49.29% 0.0419 263.17)",
+          "oklch(60.71% 0.0419 263.17)",
+          "oklch(72.14% 0.0419 263.17)",
+          "oklch(83.57% 0.0419 263.17)",
+          "oklch(95.00% 0.0419 263.17)"
+        ]
+      },
+      "secondary-border": {
+        "role": "neutral",
+        "displayName": "Secondary Border",
+        "tonalRamp": [
+          "oklch(15.00% 0.0178 264.48)",
+          "oklch(26.43% 0.0178 264.48)",
+          "oklch(37.86% 0.0178 264.48)",
+          "oklch(49.29% 0.0178 264.48)",
+          "oklch(60.71% 0.0178 264.48)",
+          "oklch(72.14% 0.0178 264.48)",
+          "oklch(83.57% 0.0178 264.48)",
+          "oklch(95.00% 0.0178 264.48)"
+        ]
+      },
+      "field-border": {
+        "role": "neutral",
+        "displayName": "Field Border",
+        "tonalRamp": [
+          "oklch(15.00% 0.0262 261.14)",
+          "oklch(26.43% 0.0262 261.14)",
+          "oklch(37.86% 0.0262 261.14)",
+          "oklch(49.29% 0.0262 261.14)",
+          "oklch(60.71% 0.0262 261.14)",
+          "oklch(72.14% 0.0262 261.14)",
+          "oklch(83.57% 0.0262 261.14)",
+          "oklch(95.00% 0.0262 261.14)"
+        ]
+      },
+      "due-bg": {
+        "role": "neutral",
+        "displayName": "Due Bg",
+        "tonalRamp": [
+          "oklch(15.00% 0.0104 261.79)",
+          "oklch(26.43% 0.0104 261.79)",
+          "oklch(37.86% 0.0104 261.79)",
+          "oklch(49.29% 0.0104 261.79)",
+          "oklch(60.71% 0.0104 261.79)",
+          "oklch(72.14% 0.0104 261.79)",
+          "oklch(83.57% 0.0104 261.79)",
+          "oklch(95.00% 0.0104 261.79)"
+        ]
+      },
+      "due-ink": {
+        "role": "neutral",
+        "displayName": "Due Ink",
+        "tonalRamp": [
+          "oklch(15.00% 0.0411 260.27)",
+          "oklch(26.43% 0.0411 260.27)",
+          "oklch(37.86% 0.0411 260.27)",
+          "oklch(49.29% 0.0411 260.27)",
+          "oklch(60.71% 0.0411 260.27)",
+          "oklch(72.14% 0.0411 260.27)",
+          "oklch(83.57% 0.0411 260.27)",
+          "oklch(95.00% 0.0411 260.27)"
+        ]
+      },
+      "urgent-bg": {
+        "role": "secondary",
+        "displayName": "Urgent Bg",
+        "tonalRamp": [
+          "oklch(15.00% 0.0288 77.55)",
+          "oklch(26.43% 0.0288 77.55)",
+          "oklch(37.86% 0.0288 77.55)",
+          "oklch(49.29% 0.0288 77.55)",
+          "oklch(60.71% 0.0288 77.55)",
+          "oklch(72.14% 0.0288 77.55)",
+          "oklch(83.57% 0.0288 77.55)",
+          "oklch(95.00% 0.0288 77.55)"
+        ]
+      },
+      "urgent-ink": {
+        "role": "secondary",
+        "displayName": "Urgent Ink",
+        "tonalRamp": [
+          "oklch(15.00% 0.0996 60.85)",
+          "oklch(26.43% 0.0996 60.85)",
+          "oklch(37.86% 0.0996 60.85)",
+          "oklch(49.29% 0.0996 60.85)",
+          "oklch(60.71% 0.0996 60.85)",
+          "oklch(72.14% 0.0996 60.85)",
+          "oklch(83.57% 0.0996 60.85)",
+          "oklch(95.00% 0.0996 60.85)"
+        ]
+      },
+      "overdue-bg": {
+        "role": "secondary",
+        "displayName": "Overdue Bg",
+        "tonalRamp": [
+          "oklch(15.00% 0.0197 21.36)",
+          "oklch(26.43% 0.0197 21.36)",
+          "oklch(37.86% 0.0197 21.36)",
+          "oklch(49.29% 0.0197 21.36)",
+          "oklch(60.71% 0.0197 21.36)",
+          "oklch(72.14% 0.0197 21.36)",
+          "oklch(83.57% 0.0197 21.36)",
+          "oklch(95.00% 0.0197 21.36)"
+        ]
+      },
+      "overdue-ink": {
+        "role": "secondary",
+        "displayName": "Overdue Ink",
+        "tonalRamp": [
+          "oklch(15.00% 0.1447 25.56)",
+          "oklch(26.43% 0.1447 25.56)",
+          "oklch(37.86% 0.1447 25.56)",
+          "oklch(49.29% 0.1447 25.56)",
+          "oklch(60.71% 0.1447 25.56)",
+          "oklch(72.14% 0.1447 25.56)",
+          "oklch(83.57% 0.1447 25.56)",
+          "oklch(95.00% 0.1447 25.56)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "headline": {
+        "displayName": "Page headline",
+        "purpose": "Compact contextual page title; 25px at widths up to 760px."
+      },
+      "title": {
+        "displayName": "Section title",
+        "purpose": "Calendar, task and module section headings."
+      },
+      "body": {
+        "displayName": "Interface body",
+        "purpose": "Local system sans base text."
+      },
+      "label": {
+        "displayName": "Action label",
+        "purpose": "Primary and secondary button labels."
+      },
+      "metadata": {
+        "displayName": "Supporting metadata",
+        "purpose": "Small time, course and status information."
+      }
+    },
+    "shadows": [
+      {
+        "name": "shadow-overlay",
+        "value": "0 20px 64px #17213933",
+        "purpose": "Native dialogs above a dim backdrop."
+      },
+      {
+        "name": "toast",
+        "value": "0 8px 28px #18233829",
+        "purpose": "Transient feedback above the workspace."
+      }
+    ],
+    "motion": [
+      {
+        "name": "ease-out",
+        "value": "cubic-bezier(.23, 1, .32, 1)",
+        "purpose": "Existing button, modal and toast easing."
+      },
+      {
+        "name": "overlay-feedback",
+        "value": "180ms",
+        "purpose": "Modal and toast opacity/transform; disabled for keyboard and reduced motion."
+      },
+      {
+        "name": "pointer-press",
+        "value": "120ms",
+        "purpose": "Button press scale(.97) for pointer input; disabled for reduced motion."
+      },
+      {
+        "name": "sync-spinner",
+        "value": "800ms linear infinite",
+        "purpose": "Indicates sync in progress; disabled for reduced motion."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "wide-min",
+        "value": "1700px"
+      },
+      {
+        "name": "calendar-stack-max",
+        "value": "1300px"
+      },
+      {
+        "name": "top-navigation-max",
+        "value": "1050px"
+      },
+      {
+        "name": "compact-layout-max",
+        "value": "760px"
+      },
+      {
+        "name": "daily-agenda-max",
+        "value": "640px"
+      },
+      {
+        "name": "toolbar-wrap-max",
+        "value": "360px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Existing primary action, with pointer, focus and disabled states.",
+      "html": "<button class=\"ds-button-primary\" type=\"button\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M12 5v14M5 12h14\"/></svg>Add task</button>",
+      "css": ".ds-button-primary { display:inline-flex; justify-content:center; align-items:center; gap:8px; min-height:40px; padding:9px 15px; border:1px solid transparent; border-radius:var(--radius, 8px); background:var(--accent, #3658cf); color:#fff; font:600 13px/1.4 var(--sans, 'Segoe UI', -apple-system, BlinkMacSystemFont, Arial, sans-serif); white-space:nowrap; cursor:pointer; touch-action:manipulation; } .ds-button-primary svg { width:18px; height:18px; fill:none; stroke:currentColor; stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round; flex-shrink:0; } .ds-button-primary:focus-visible { outline: 3px solid #5479ef; outline-offset: 3px; } @media (hover:hover) and (pointer:fine) { .ds-button-primary:hover { background:var(--accent-hover, #2846ae);  } } .ds-button-primary:disabled, .ds-button-primary:disabled:hover { background:#e6eaf1; border-color:#d7dce6; color:#626d80; cursor:not-allowed; } :host-context(body:not([data-input=\"keyboard\"])) .ds-button-primary { transition:transform 120ms var(--ease-out, cubic-bezier(.23, 1, .32, 1)); } :host-context(body:not([data-input=\"keyboard\"])) .ds-button-primary:active:not(:disabled) { transform:scale(.97); } @media (prefers-reduced-motion:reduce) { .ds-button-primary { transition:none !important; } .ds-button-primary:active { transform:none !important; } }"
+    },
+    {
+      "name": "Secondary button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Existing secondary action, with pointer, focus and disabled states.",
+      "html": "<button class=\"ds-button-secondary\" type=\"button\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M20 7v5h-5M4 17v-5h5M5 8a8 8 0 0 1 13-3l2 3M4 16l2 3a8 8 0 0 0 13-3\"/></svg>Sync Moodle</button>",
+      "css": ".ds-button-secondary { display:inline-flex; justify-content:center; align-items:center; gap:8px; min-height:40px; padding:9px 15px; border:1px solid #cfd5e1; border-radius:var(--radius, 8px); background:var(--paper, #fff); color:#3d4960; font:600 13px/1.4 var(--sans, 'Segoe UI', -apple-system, BlinkMacSystemFont, Arial, sans-serif); white-space:nowrap; cursor:pointer; touch-action:manipulation; } .ds-button-secondary svg { width:18px; height:18px; fill:none; stroke:currentColor; stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round; flex-shrink:0; } .ds-button-secondary:focus-visible { outline: 3px solid #5479ef; outline-offset: 3px; } @media (hover:hover) and (pointer:fine) { .ds-button-secondary:hover { background:#edf1f8; border-color:#bdc7da; } } .ds-button-secondary:disabled, .ds-button-secondary:disabled:hover { background:#e6eaf1; border-color:#d7dce6; color:#626d80; cursor:not-allowed; } :host-context(body:not([data-input=\"keyboard\"])) .ds-button-secondary { transition:transform 120ms var(--ease-out, cubic-bezier(.23, 1, .32, 1)); } :host-context(body:not([data-input=\"keyboard\"])) .ds-button-secondary:active:not(:disabled) { transform:scale(.97); } @media (prefers-reduced-motion:reduce) { .ds-button-secondary { transition:none !important; } .ds-button-secondary:active { transform:none !important; } }"
+    },
+    {
+      "name": "Small utility button",
+      "kind": "button",
+      "refersTo": "button-small",
+      "description": "Existing compact utility action, with pointer, focus and disabled states.",
+      "html": "<button class=\"ds-button-small\" type=\"button\">Today</button>",
+      "css": ".ds-button-small { display:inline-flex; justify-content:center; align-items:center; gap:8px; min-height:34px; padding:7px 11px; border:1px solid #cfd5e1; border-radius:var(--radius, 8px); background:var(--paper, #fff); color:#3d4960; font:500 12px/1.4 var(--sans, 'Segoe UI', -apple-system, BlinkMacSystemFont, Arial, sans-serif); white-space:nowrap; cursor:pointer; touch-action:manipulation; } .ds-button-small svg { width:18px; height:18px; fill:none; stroke:currentColor; stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round; flex-shrink:0; } .ds-button-small:focus-visible { outline: 3px solid #5479ef; outline-offset: 3px; } @media (hover:hover) and (pointer:fine) { .ds-button-small:hover { background:#edf1f8; border-color:#bdc7da; } } .ds-button-small:disabled, .ds-button-small:disabled:hover { background:#e6eaf1; border-color:#d7dce6; color:#626d80; cursor:not-allowed; } :host-context(body:not([data-input=\"keyboard\"])) .ds-button-small { transition:transform 120ms var(--ease-out, cubic-bezier(.23, 1, .32, 1)); } :host-context(body:not([data-input=\"keyboard\"])) .ds-button-small:active:not(:disabled) { transform:scale(.97); } @media (prefers-reduced-motion:reduce) { .ds-button-small { transition:none !important; } .ds-button-small:active { transform:none !important; } }"
+    },
+    {
+      "name": "Labelled text field",
+      "kind": "input",
+      "refersTo": "field",
+      "description": "Modal field with visible label, helper copy, focus and disabled treatment.",
+      "html": "<div class=\"ds-field-group\"><label class=\"ds-field-label\" for=\"ds-task-title\">What are you working on?</label><input class=\"ds-field\" id=\"ds-task-title\" placeholder=\"e.g. Finish the maths problem sheet\" aria-describedby=\"ds-task-help\"><p class=\"ds-field-help\" id=\"ds-task-help\">The planner splits your estimate into focus sessions before the deadline.</p></div>",
+      "css": ".ds-field-group { font-family:var(--sans, 'Segoe UI', -apple-system, BlinkMacSystemFont, Arial, sans-serif); } .ds-field-label { display:block; margin:0 0 7px; color:#41506a; font-size:12px; font-weight:500; line-height:1.5; } .ds-field { display:block; width:100%; min-width:0; min-height:42px; padding:9px 11px; border:1px solid #bfc9da; border-radius:var(--radius, 8px); background:#fff; color:var(--ink, #202a3d); font:13px/1.5 var(--sans, 'Segoe UI', -apple-system, BlinkMacSystemFont, Arial, sans-serif); caret-color:var(--accent, #3658cf); } .ds-field::placeholder { color:#69758a; opacity:1; } .ds-field:disabled { color:#5a667c; background:#edf0f5; border-color:#d9deea; cursor:not-allowed; } .ds-field-help { margin:9px 0 16px; color:var(--muted, #626d80); font-size:12px; line-height:1.7; } .ds-field:focus-visible { outline: 3px solid #5479ef; outline-offset: 3px; } @media (max-width:640px) { .ds-field { min-height:46px; font-size:16px; } }"
+    },
+    {
+      "name": "Labelled navigation",
+      "kind": "nav",
+      "refersTo": "nav-item",
+      "description": "Main destinations and active state extracted from the ink navigation rail.",
+      "html": "<div class=\"ds-nav-shell\"><nav class=\"ds-nav\" aria-label=\"Main navigation\"><button class=\"ds-nav-item ds-nav-active\" aria-current=\"page\" type=\"button\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><rect x=\"3\" y=\"5\" width=\"18\" height=\"16\" rx=\"3\"/><path d=\"M16 3v4M8 3v4M3 11h18M8 15h2M14 15h2\"/></svg><span>My week</span></button><button class=\"ds-nav-item\" type=\"button\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"m5 12 4 4L19 6\"/></svg><span>All tasks</span><span class=\"ds-nav-count\">4</span></button><button class=\"ds-nav-item\" type=\"button\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M12 6c-3-3-7-3-10-2v15c3-1 7-1 10 2 3-3 7-3 10-2V4c-3-1-7-1-10 2Zm0 0v15\"/></svg><span>My modules</span></button></nav></div>",
+      "css": ".ds-nav-shell { padding:28px 16px 16px; background:var(--sidebar-bg, #182338); font-family:var(--sans, 'Segoe UI', -apple-system, BlinkMacSystemFont, Arial, sans-serif); } .ds-nav { display:grid; gap:5px; } .ds-nav-item { display:flex; align-items:center; gap:11px; width:100%; min-height:44px; padding:10px 12px; border:0; border-radius:var(--radius, 8px); background:transparent; text-align:left; color:var(--sidebar-ink, #d2d9e7); font:13px/1.5 var(--sans, 'Segoe UI', -apple-system, BlinkMacSystemFont, Arial, sans-serif); cursor:pointer; } .ds-nav-active { background:#304369; color:#fff; font-weight:600; } .ds-nav-active svg { color:#a8beff; } .ds-nav-count { display:grid; place-items:center; min-width:23px; height:22px; margin-left:auto; padding-inline:5px; border-radius:5px; background:#344259; color:#e1e8f7; font-size:11px; font-variant-numeric:tabular-nums; } .ds-nav-item svg { width:18px; height:18px; fill:none; stroke:currentColor; stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round; flex-shrink:0; } .ds-nav-item:focus-visible { outline: 3px solid #5479ef; outline-offset: 3px; } @media (hover:hover) and (pointer:fine) { .ds-nav-item:hover { background:#2a3852; color:#fff; } .ds-nav-active:hover { background:#344c77; } }"
+    },
+    {
+      "name": "Deadline badges",
+      "kind": "chip",
+      "refersTo": "due-label",
+      "description": "Noninteractive neutral, urgent and overdue deadline labels.",
+      "html": "<span class=\"ds-due\">Fri, 23 Oct</span> <span class=\"ds-due ds-due-urgent\">Tomorrow</span> <span class=\"ds-due ds-due-overdue\">Overdue</span>",
+      "css": ".ds-due { display:inline-block; padding:3px 7px; border-radius:4px; background:#e9edf4; color:#515f76; font:11px/1.5 var(--sans, 'Segoe UI', -apple-system, BlinkMacSystemFont, Arial, sans-serif); } .ds-due-urgent { background:#f9ecd9; color:#875019; } .ds-due-overdue { background:#fbe9e8; color:#a33633; }"
+    },
+    {
+      "name": "Command panel",
+      "kind": "card",
+      "refersTo": "panel",
+      "description": "Flat bordered command surface, including its shared field and suggestion controls.",
+      "html": "<section class=\"ds-command\" aria-labelledby=\"ds-command-title\"><div class=\"ds-command-intro\"><div><h2 id=\"ds-command-title\">Make room for a change</h2><p>Block time, move a task or mark it complete.</p></div><span class=\"ds-private\">Private to this device</span></div><div class=\"ds-command-form\"><input class=\"ds-command-input\" aria-label=\"Tell your planner what changed\" placeholder=\"Try “I’m busy Wednesday afternoon”…\"><button class=\"ds-send\" type=\"button\" aria-label=\"Send request\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"M5 12h14m-5-5 5 5-5 5\"/></svg></button></div><div class=\"ds-suggestions\"><button type=\"button\">Wednesday afternoon off</button><button type=\"button\">Finished a task</button></div></section>",
+      "css": ".ds-command { padding:24px; border:1px solid var(--line, #dfe3ec); border-radius:var(--panel-radius, 12px); background:var(--paper, #fff); color:var(--ink, #202a3d); font-family:var(--sans, 'Segoe UI', -apple-system, BlinkMacSystemFont, Arial, sans-serif); } .ds-command-intro { display:flex; align-items:center; justify-content:space-between; gap:16px; } .ds-command-intro h2 { margin:0; font-size:15px; font-weight:600; line-height:1.4; letter-spacing:-.015em; } .ds-command-intro p { margin:4px 0 0; color:var(--muted, #626d80); font-size:12px; line-height:1.5; } .ds-private { color:var(--muted, #626d80); font-size:11px; white-space:nowrap; } .ds-command-form { display:flex; align-items:center; gap:12px; margin-top:16px; padding:6px 7px 6px 14px; border:1px solid #c6cede; border-radius:var(--radius, 8px); background:#fafbfe; } .ds-command-form:focus-within { outline:2px solid #5479ef; outline-offset:2px; } .ds-command-input { flex:1; min-width:0; height:35px; padding:0; border:0; outline:0; background:transparent; color:var(--ink, #202a3d); font:13px/1.5 var(--sans, 'Segoe UI', -apple-system, BlinkMacSystemFont, Arial, sans-serif); } .ds-command-input::placeholder { color:#69758a; opacity:1; } .ds-send { display:grid; place-items:center; width:36px; height:36px; padding:0; border:0; border-radius:6px; background:var(--accent, #3658cf); color:#fff; flex-shrink:0; cursor:pointer; } .ds-send svg { width:18px; height:18px; fill:none; stroke:currentColor; stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round; flex-shrink:0; } .ds-suggestions { display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; } .ds-suggestions button { min-height:32px; padding:5px 10px; border:0; border-radius:6px; background:#f0f3f8; color:#52627e; font:11px/1.5 var(--sans, 'Segoe UI', -apple-system, BlinkMacSystemFont, Arial, sans-serif); cursor:pointer; } .ds-send:focus-visible { outline: 3px solid #5479ef; outline-offset: 3px; } .ds-suggestions button:focus-visible { outline: 3px solid #5479ef; outline-offset: 3px; } @media (hover:hover) and (pointer:fine) { .ds-send:hover { background:var(--accent-hover, #2846ae); } .ds-suggestions button:hover { background:#e6ecfa; color:#2d4fae; } } :host-context(body:not([data-input=\"keyboard\"])) .ds-send { transition:transform 120ms var(--ease-out, cubic-bezier(.23, 1, .32, 1)); } :host-context(body:not([data-input=\"keyboard\"])) .ds-send:active:not(:disabled) { transform:scale(.97); } @media (prefers-reduced-motion:reduce) { .ds-send { transition:none !important; } .ds-send:active { transform:none !important; } } @media (max-width:640px) { .ds-command { padding:18px 16px; } .ds-private { display:none; } .ds-command-input { height:38px; font-size:16px; } .ds-command-input::placeholder { font-size:12px; } .ds-send { width:40px; height:40px; } .ds-suggestions button { min-height:40px; padding-inline:8px; } }"
+    },
+    {
+      "name": "Task row",
+      "kind": "custom",
+      "refersTo": "task-row",
+      "description": "Completion control, module attribution, editable title, deadline and estimate.",
+      "html": "<article class=\"ds-task\"><button class=\"ds-task-check\" type=\"button\" aria-label=\"Complete Maths problem sheet\" aria-pressed=\"false\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"m5 12 4 4L19 6\"/></svg></button><div class=\"ds-task-info\"><div class=\"ds-task-course\"><span class=\"ds-course-dot\"></span>MATH0010</div><button class=\"ds-task-title\" type=\"button\">Maths problem sheet</button><div class=\"ds-task-bottom\"><span class=\"ds-task-due\">Tomorrow</span><span class=\"ds-task-estimate\"><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><circle cx=\"12\" cy=\"12\" r=\"9\"/><path d=\"M12 7v5l3 2\"/></svg>2h</span></div></div></article>",
+      "css": ".ds-task { display:flex; align-items:flex-start; gap:6px; padding:19px 0; border-bottom:1px solid var(--line, #dfe3ec); font-family:var(--sans, 'Segoe UI', -apple-system, BlinkMacSystemFont, Arial, sans-serif); } .ds-task-check { display:grid; place-items:center; width:32px; height:34px; padding:0; margin:7px 0 0 -5px; flex-shrink:0; border:0; border-radius:6px; position:relative; color:#fff; background:transparent; cursor:pointer; } .ds-task-check::before { content:''; position:absolute; width:17px; height:17px; border:1px solid #a0acc1; border-radius:5px; background:var(--paper, #fff); } .ds-task svg { width:18px; height:18px; fill:none; stroke:currentColor; stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round; flex-shrink:0; } .ds-task-check svg { z-index:1; width:12px; height:12px; opacity:0; } .ds-task-check[aria-pressed=\"true\"]::before { background:var(--accent, #3658cf); border-color:var(--accent, #3658cf); } .ds-task-check[aria-pressed=\"true\"] svg { opacity:1; } .ds-task-info { flex:1; min-width:0; } .ds-task-course { display:flex; align-items:center; gap:6px; margin-bottom:5px; color:var(--muted, #626d80); font-size:11px; line-height:1.4; } .ds-course-dot { width:7px; height:7px; border-radius:2px; background:#5277a5; flex-shrink:0; } .ds-task-title { display:block; width:100%; padding:0; border:0; background:transparent; color:var(--ink, #202a3d); text-align:left; font:600 13px/1.5 var(--sans, 'Segoe UI', -apple-system, BlinkMacSystemFont, Arial, sans-serif); cursor:pointer; } .ds-task-bottom { display:flex; justify-content:space-between; align-items:center; gap:10px; margin-top:10px; color:var(--muted, #626d80); font-size:11px; } .ds-task-due { padding:3px 7px; border-radius:4px; background:#f9ecd9; color:#875019; line-height:1.5; } .ds-task-estimate { display:flex; align-items:center; gap:4px; font-variant-numeric:tabular-nums; white-space:nowrap; } .ds-task-estimate svg { width:13px; height:13px; } .ds-task-check:focus-visible { outline: 3px solid #5479ef; outline-offset: 3px; } .ds-task-title:focus-visible { outline: 3px solid #5479ef; outline-offset: 3px; } @media (hover:hover) and (pointer:fine) { .ds-task-title:hover { text-decoration:underline; text-underline-offset:3px; } .ds-task-check:hover::before { border-color:var(--accent, #3658cf); background:var(--accent-soft, #edf1ff); } .ds-task-check:hover svg { opacity:1; color:var(--accent, #3658cf); } .ds-task-check[aria-pressed=\"true\"]:hover::before { background:var(--accent, #3658cf); } .ds-task-check[aria-pressed=\"true\"]:hover svg { color:#fff; } } @media (max-width:640px) { .ds-task { padding:17px 0; } .ds-task-check { width:40px; height:44px; margin:0 0 0 -7px; } .ds-task-title { font-size:14px; } }"
+    },
+    {
+      "name": "Calendar event",
+      "kind": "custom",
+      "refersTo": "calendar-event",
+      "description": "One-hour timetable tile; the three existing category variants share the same geometry.",
+      "html": "<div class=\"ds-calendar-column\"><button class=\"ds-calendar-event\" type=\"button\" title=\"09:00–10:00 · Linear algebra\" aria-label=\"Linear algebra, 09:00–10:00\"><span class=\"ds-event-time\">09:00–10:00</span><strong>Linear algebra</strong></button></div>",
+      "css": ".ds-calendar-column { position:relative; width:180px; height:72px; } .ds-calendar-event { position:absolute; top:0; left:3px; width:calc(100% - 6px); height:69px; z-index:1; display:flex; flex-direction:column; align-items:stretch; justify-content:flex-start; padding:4px 6px; border:1px solid #d0e0d4; border-radius:5px; background:var(--lecture-bg, #eaf2ec); color:var(--lecture-ink, #315c42); overflow:hidden; text-align:left; font:11px/1.3 var(--sans, 'Segoe UI', -apple-system, BlinkMacSystemFont, Arial, sans-serif); min-height:14px; cursor:pointer; } .ds-calendar-event.ds-study { border-color:#d8dff8; background:var(--study-bg, #edf0fe); color:var(--study-ink, #384fa2); } .ds-calendar-event.ds-personal { border-color:#ecd8b8; background:var(--personal-bg, #fcf0df); color:var(--personal-ink, #805218); } .ds-event-time { display:block; font-size:11px; font-weight:500; line-height:1.3; white-space:nowrap; font-variant-numeric:tabular-nums; } .ds-calendar-event strong { display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; flex-shrink:0; margin-top:2px; font-size:11px; font-weight:600; line-height:1.25; } .ds-calendar-event.ds-short { padding:0 4px; } .ds-calendar-event.ds-short strong { display:block; margin:0; white-space:nowrap; text-overflow:ellipsis; line-height:12px; } .ds-short .ds-event-time { display:none; } .ds-calendar-event:focus-visible { outline:3px solid #5479ef; outline-offset:-2px; z-index:3; } @media (hover:hover) and (pointer:fine) { .ds-calendar-event:hover { filter:brightness(.97); z-index:3; } }"
+    },
+    {
+      "name": "Mobile day agenda",
+      "kind": "custom",
+      "refersTo": "agenda-day",
+      "description": "Phone selector and readable event row, extracted without the viewport gate for preview.",
+      "html": "<section class=\"ds-agenda\"><div class=\"ds-agenda-days\" role=\"group\" aria-label=\"Select a day\"><button class=\"ds-agenda-day\" type=\"button\" aria-pressed=\"false\"><span>Mon</span><strong>12</strong></button><button class=\"ds-agenda-day\" type=\"button\" aria-pressed=\"false\"><span>Tue</span><strong>13</strong></button><button class=\"ds-agenda-day\" type=\"button\" aria-pressed=\"false\"><span>Wed</span><strong>14</strong></button><button class=\"ds-agenda-day\" type=\"button\" aria-pressed=\"false\"><span>Thu</span><strong>15</strong></button><button class=\"ds-agenda-day\" type=\"button\" aria-pressed=\"true\" aria-current=\"date\"><span>Fri</span><strong>16</strong></button><button class=\"ds-agenda-day\" type=\"button\" aria-pressed=\"false\"><span>Sat</span><strong>17</strong></button><button class=\"ds-agenda-day\" type=\"button\" aria-pressed=\"false\"><span>Sun</span><strong>18</strong></button></div><h3 class=\"ds-agenda-date\">Friday, 16 October</h3><div class=\"ds-agenda-events\"><button class=\"ds-agenda-event ds-agenda-study\" type=\"button\" aria-label=\"Maths problem sheet, 10:00–10:50, Study session\"><span class=\"ds-agenda-time\">10:00–10:50</span><span class=\"ds-agenda-info\"><strong>Maths problem sheet</strong><span class=\"ds-agenda-meta\">Study session · MATH0010</span></span><svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path d=\"m9 5 7 7-7 7\"/></svg></button></div></section>",
+      "css": ".ds-agenda { font-family:var(--sans, 'Segoe UI', -apple-system, BlinkMacSystemFont, Arial, sans-serif); background:var(--paper, #fff); } .ds-agenda-days { display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:4px; padding:10px; border-block:1px solid var(--line, #dfe3ec); background:#fafbfe; } .ds-agenda-day { display:flex; align-items:center; flex-direction:column; justify-content:center; gap:4px; min-width:0; min-height:58px; padding:5px 2px; border:0; border-radius:7px; background:transparent; color:#5a6780; font:11px/1.5 var(--sans, 'Segoe UI', -apple-system, BlinkMacSystemFont, Arial, sans-serif); font-variant-numeric:tabular-nums; cursor:pointer; } .ds-agenda-day strong { font-size:16px; font-weight:600; color:var(--ink, #202a3d); } .ds-agenda-day[aria-pressed=\"true\"] { background:var(--accent, #3658cf); color:#fff; } .ds-agenda-day[aria-pressed=\"true\"] strong { color:#fff; } .ds-agenda-date { padding:16px 14px 8px; margin:0; color:var(--muted, #626d80); font-size:12px; font-weight:600; line-height:1.5; } .ds-agenda-events { padding:0 12px 14px; } .ds-agenda-event { display:flex; align-items:center; gap:12px; width:100%; margin-top:8px; min-height:78px; padding:12px; border:0; border-radius:7px; background:var(--lecture-bg, #eaf2ec); color:var(--lecture-ink, #315c42); text-align:left; cursor:pointer; } .ds-agenda-study { background:var(--study-bg, #edf0fe); color:var(--study-ink, #384fa2); } .ds-agenda-personal { background:var(--personal-bg, #fcf0df); color:var(--personal-ink, #805218); } .ds-agenda-time { width:68px; flex-shrink:0; font:500 11px/1.6 var(--sans, 'Segoe UI', -apple-system, BlinkMacSystemFont, Arial, sans-serif); font-variant-numeric:tabular-nums; } .ds-agenda-info { flex:1; min-width:0; } .ds-agenda-info strong { display:block; font:600 13px/1.45 var(--sans, 'Segoe UI', -apple-system, BlinkMacSystemFont, Arial, sans-serif); } .ds-agenda-meta { display:block; margin-top:5px; font:11px/1.5 var(--sans, 'Segoe UI', -apple-system, BlinkMacSystemFont, Arial, sans-serif); } .ds-agenda-event svg { width:18px; height:18px; fill:none; stroke:currentColor; stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round; flex-shrink:0; } .ds-agenda-event > svg { width:15px; height:15px; } .ds-agenda-day:focus-visible { outline: 3px solid #5479ef; outline-offset: 3px; } .ds-agenda-event:focus-visible { outline: 3px solid #5479ef; outline-offset: 3px; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "A precise campus planning desk",
+    "overview": "Study Space is a precise campus planning desk: a restrained, information-led workspace for the week, tasks and modules. Midnight ink anchors navigation, a cool near-white canvas separates the working areas, and white surfaces carry the content. Blue identifies primary actions and selection; schedule categories retain their own muted fills.\n\nThe interface uses the installed system sans family, compact headings and aligned rows. Borders and spacing establish hierarchy before shadows. The existing Study Space mark remains local, as do the inline SVG icons; no remote font or decorative image is required.",
+    "keyCharacteristics": [
+      "Clear separation between navigation and work surfaces.",
+      "Compact, sentence-case headings with tabular time and count values.",
+      "Soft category fills with readable dark event labels.",
+      "A daily agenda replaces the seven-column calendar on phones.",
+      "Visible focus, labelled controls and immediate reduced-motion feedback."
+    ],
+    "rules": [
+      {
+        "name": "The Semantic Colour Rule",
+        "body": "Use the existing timetable, study and personal colour pairs consistently in both calendar and agenda representations. Keep text and accessible labels alongside colour.",
+        "section": "colors"
+      },
+      {
+        "name": "The Content Hierarchy Rule",
+        "body": "Use the existing compact heading scale; let spacing, weight and alignment distinguish the working sections.",
+        "section": "typography"
+      },
+      {
+        "name": "The Overlay Depth Rule",
+        "body": "Keep ordinary panels flat and bordered. Reserve the existing shadows for dialogs and toasts.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do reuse the existing colour pairs, control radii and system font stack.",
+      "Do keep the week, tasks and modules navigation labelled at every viewport size.",
+      "Do retain the visible sample-workspace state and actionable empty-state buttons.",
+      "Do preserve visible keyboard focus and the reduced-motion overrides.",
+      "Do keep event titles and complete details accessible when the calendar uses a compact event treatment."
+    ],
+    "donts": [
+      "Don't add remote fonts, remote imagery or decorative gradients to this local workspace.",
+      "Don't turn list rows or module summaries into stacks of elevated cards.",
+      "Don't rely on colour alone to explain event categories, selection or status.",
+      "Don't shrink the desktop calendar into seven unreadable phone columns.",
+      "Don't animate navigation changes or bypass the keyboard and reduced-motion behavior."
+    ]
+  }
+}

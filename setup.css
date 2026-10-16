@@ -1,0 +1,86 @@
+/* Setup reuses the workspace tokens and controls; no separate visual system. */
+.setup-page { padding: 40px 24px; }
+.setup-shell { display: grid; grid-template-columns: 290px minmax(0, 1fr); max-width: 1120px; min-height: 740px; margin: 0 auto; border: 1px solid var(--line); border-radius: var(--panel-radius); overflow: hidden; background: var(--paper); }
+.setup-sidebar { display: flex; flex-direction: column; padding: 36px 30px; background: var(--sidebar-bg); color: var(--sidebar-ink); }
+.setup-sidebar .brand { padding: 0; }
+.setup-intro { margin: 52px 0 36px; }
+.setup-intro h2 { color: #fff; font-size: 24px; line-height: 1.35; max-width: 190px; }
+.setup-intro p { color: var(--sidebar-muted); margin: 12px 0 0; font-size: 13px; line-height: 1.7; }
+.setup-steps { display: flex; flex-direction: column; gap: 28px; list-style: none; padding: 0; margin: 0; }
+.setup-steps li { display: flex; align-items: flex-start; gap: 12px; color: var(--sidebar-muted); font-size: 13px; }
+.step-number { display: grid; place-items: center; flex-shrink: 0; width: 28px; height: 28px; border: 1px solid #61708a; border-radius: 50%; font-size: 12px; font-variant-numeric: tabular-nums; }
+.setup-steps li > span:last-child { padding-top: 3px; }
+.setup-steps small { display: block; margin-top: 4px; font-size: 11px; color: var(--sidebar-muted); line-height: 1.5; }
+.setup-steps [aria-current="step"] { color: #fff; font-weight: 600; }
+.setup-steps [aria-current="step"] .step-number { background: #fff; border-color: #fff; color: var(--sidebar-bg); }
+.setup-steps .step-visited .step-number { border-color: #abbadd; color: #fff; }
+.setup-sidebar-note { margin: auto 0 0; padding-top: 40px; color: var(--sidebar-muted); font-size: 12px; line-height: 1.8; }
+.setup-main { margin-left: 0; min-width: 0; display: flex; flex-direction: column; padding: 32px 48px; }
+.setup-top { display: flex; justify-content: space-between; align-items: center; gap: 16px; font-size: 12px; color: var(--muted); }
+.setup-top a { display: inline-flex; align-items: center; gap: 6px; color: var(--accent); padding: 8px 0; }
+.setup-top svg { width: 14px; height: 14px; }
+.setup-preview { margin: 20px 0 34px; padding: 12px 14px; border-radius: 6px; background: var(--bg); color: var(--muted); font-size: 12px; line-height: 1.6; }
+.setup-preview strong { color: var(--ink); margin-right: 6px; font-weight: 600; }
+#setup-form { display: flex; flex-direction: column; flex: 1; }
+.setup-panel { flex: 1; padding: 4px 0 36px; }
+.setup-panel h1 { max-width: 500px; font-size: 28px; text-wrap: balance; }
+.setup-description { margin: 14px 0 32px; color: var(--muted); font-size: 14px; line-height: 1.75; max-width: 62ch; }
+.setup-label, .setup-activity label { display: block; margin-bottom: 9px; font-size: 13px; font-weight: 600; }
+.setup-page input:not([type="radio"]):not([type="checkbox"]) { width: 100%; min-width: 0; min-height: 46px; padding: 11px 13px; border: 1px solid #bfc9da; border-radius: var(--radius); background: #fff; color: var(--ink); font-size: 14px; }
+.setup-help { color: var(--muted); font-size: 12px; line-height: 1.7; margin: 10px 0 24px; }
+.setup-explainer { margin-top: 28px; padding-block: 18px; border-block: 1px solid var(--line); font-size: 13px; }
+.setup-explainer summary { cursor: pointer; color: var(--accent); }
+.setup-explainer p { margin: 12px 0 0; color: var(--muted); line-height: 1.75; }
+.setup-optional { color: var(--muted); font-size: 12px; margin: 24px 0 0; }
+.setup-moodle { display: flex; align-items: center; gap: 14px; margin-bottom: 28px; }
+.setup-moodle .integration-logo { width: 52px; height: 52px; }
+.setup-moodle p { color: var(--muted); font-size: 13px; margin: 4px 0 0; }
+.setup-connection-note { border-top: 1px solid var(--line); margin-top: 32px; padding-top: 20px; font-size: 12px; line-height: 1.7; color: var(--muted); }
+.setup-unit-field { display: flex; align-items: center; gap: 12px; max-width: 230px; }
+.setup-unit-field span { color: var(--muted); font-size: 13px; }
+.study-choice { padding: 0; margin: 32px 0 0; border: 0; min-width: 0; }
+.study-choice legend { font-size: 13px; font-weight: 600; margin-bottom: 12px; }
+.study-choice-options { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.study-choice-options label { display: flex; align-items: center; gap: 12px; padding: 16px; border: 1px solid var(--line); border-radius: var(--radius); cursor: pointer; }
+.study-choice-options label:has(:checked) { background: var(--accent-soft); border-color: var(--accent); }
+.study-choice-options input, .activity-days input { accent-color: var(--accent); width: 17px; height: 17px; flex-shrink: 0; margin: 0; }
+.study-choice-options strong { display: block; font-size: 13px; font-weight: 600; }
+.study-choice-options small { display: block; color: var(--muted); font-size: 12px; margin-top: 5px; }
+.setup-activities-empty { border-block: 1px solid var(--line); padding: 24px 0; margin-bottom: 24px; }
+.setup-activities-empty h2 { font-size: 14px; }
+.setup-activities-empty p { color: var(--muted); font-size: 13px; line-height: 1.7; margin: 8px 0 0; }
+.setup-activity { border: 0; border-top: 1px solid var(--line); padding: 22px 0; margin: 0; min-width: 0; }
+.activity-heading { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+.activity-heading h2 { font-size: 14px; }
+.activity-remove { font-size: 12px; color: var(--danger); min-height: 36px; padding: 6px; }
+.activity-days { border: 0; padding: 0; margin: 18px 0; min-width: 0; }
+.activity-days legend { font-size: 12px; font-weight: 600; margin-bottom: 10px; }
+.activity-day-options { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; max-width: 360px; }
+.setup-activity .activity-day { position: relative; display: grid; place-items: center; min-width: 0; min-height: 44px; margin: 0; border: 1px solid var(--line); border-radius: 6px; font-size: 12px; font-weight: 400; cursor: pointer; }
+.activity-day input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+.activity-day:has(:checked) { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); font-weight: 600; }
+.activity-day:has(:focus-visible) { outline: 3px solid #5479ef; outline-offset: 3px; }
+.activity-times { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.activity-times label { font-size: 12px; margin: 0; }
+.activity-times input { margin-top: 8px; }
+.setup-actions { display: flex; align-items: center; gap: 12px; border-top: 1px solid var(--line); padding-top: 24px; margin-top: auto; }
+.setup-actions > span { color: var(--muted); font-size: 12px; }
+.setup-actions #setup-next { margin-left: auto; }
+.setup-page .button { min-height: 44px; }
+@media (hover: hover) { .setup-top a:hover, .activity-remove:hover { text-decoration: underline; } .study-choice-options label:hover, .activity-day:hover { border-color: var(--accent); } }
+@media (max-width: 1000px) { .setup-shell { grid-template-columns: 250px minmax(0, 1fr); } .setup-sidebar { padding-inline: 24px; } .setup-main { padding-inline: 32px; } .study-choice-options { grid-template-columns: 1fr; } }
+@media (max-width: 760px) {
+  .setup-page { padding: 0; }
+  .setup-shell { grid-template-columns: 1fr; min-height: 100dvh; border: 0; border-radius: 0; }
+  .setup-sidebar { padding: 20px 24px; }
+  .setup-intro, .setup-sidebar-note, .setup-steps small { display: none; }
+  .setup-steps { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-top: 24px; }
+  .setup-steps li { flex-direction: column; gap: 8px; font-size: 11px; line-height: 1.4; }
+  .setup-steps li > span:last-child { padding: 0; }
+  .setup-main { padding: 20px 24px 28px; }
+  .setup-preview { margin: 16px 0 28px; }
+  .setup-panel h1 { font-size: 25px; }
+  .setup-description { margin-bottom: 26px; }
+  .setup-actions { padding-top: 20px; flex-wrap: wrap; }
+}
+@media (max-width: 360px) { .setup-sidebar, .setup-main { padding-inline: 16px; } .setup-actions { gap: 8px; } .setup-actions .button { padding-inline: 10px; } .setup-actions > span { font-size: 11px; } }
