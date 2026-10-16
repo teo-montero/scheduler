@@ -99,3 +99,7 @@ Merged origin/main through 0809449 while retaining the timetable-first UI, calen
 Scraped course data is stored in workspace.courseContent (per-course state and fingerprint); calendar deadlines in workspace.moodleCalendarTasks; UCL events in workspace.events. Upstream planner, analysis and Gemini server modules are available for the next integration step. The current assistant still uses OpenAI via the server on port 4173. The upstream direct-API debug panel and forced setup redirect are not mounted over the existing frontend.
 
 Snapshot before merging: branch backup/frontend-before-logic-20261016. Local .env.local, credentials.json and moodle-local.json remain ignored. The upstream fixtures are sample fallbacks: sync surfaces their warnings and stores the dataSource metadata; they are not proof of a live Moodle connection.
+
+## Manual onboarding / scraping check
+
+Reload the unpacked Chrome extension after building. Open its setup.html and use Start again (or setup.html?fresh=1) for an empty workspace. The previous workspace stays in local storage and Restore previous workspace restores it. The localhost/in-app preview cannot access signed-in Chrome Moodle tabs. In the extension, open Moodle and sign in yourself; Load modules, Fetch selected course data and Fetch deadlines each run only when clicked. Continue never initiates Moodle requests. Finishing setup uses local planning without AI analysis. Live failures are reported directly; recorded fallbacks require an explicit internal allowFallback option and are disabled in normal/manual use.

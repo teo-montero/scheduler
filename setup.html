@@ -25,7 +25,7 @@
     </aside>
     <main class="setup-main">
       <header class="setup-top"><span>Set up your space</span><a href="dashboard.html">Skip setup <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-5-5 5 5-5 5"/></svg></a></header>
-      <p class="setup-preview"><strong>Preview</strong> Explore the steps. Answers aren’t saved and connections aren’t activated yet.</p>
+      <p class="setup-preview" role="status">Start with your timetable, or continue to Moodle. Nothing connects automatically.</p><div class="setup-restart-actions"><button type="button" id="setup-restart" class="text-button">Start again</button><button type="button" id="setup-restore" class="text-button" hidden>Restore previous workspace</button></div>
       <form id="setup-form" novalidate>
         <section class="setup-panel" data-step="0" aria-labelledby="setup-title-1">
           <h1 id="setup-title-1" tabindex="-1">Connect your UCL timetable</h1>
@@ -42,7 +42,8 @@
           <div class="setup-moodle"><span class="integration-logo moodle-logo" aria-hidden="true">m</span><div><h2>UCL Moodle</h2><p>Courses, assignments and deadlines</p></div></div>
           <a id="setup-moodle-link" class="button primary" href="https://moodle.ucl.ac.uk/my/" target="_blank" rel="noopener noreferrer">Open UCL Moodle <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3h7v7m0-7L10 14M10 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-5"/></svg></a>
           <p class="setup-help">Opens in a new tab, so you can return to finish setup.</p>
-          <p class="setup-connection-note">Opening Moodle won’t connect or import anything in this preview.</p>
+          <p class="setup-connection-note">Sign in to Moodle, then choose Load modules when you are ready.</p>
+          <section id="setup-module-picker" class="module-picker" aria-labelledby="module-picker-title"></section>
         </section>
         <section class="setup-panel" data-step="2" aria-labelledby="setup-title-3" hidden>
           <h1 id="setup-title-3" tabindex="-1">Make it fit your day</h1>
