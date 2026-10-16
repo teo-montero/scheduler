@@ -23,3 +23,6 @@ test-results/
 .impeccable/review/
 
 /setup.js
+
+# Public template only; real local credentials stay ignored
+!.env.example

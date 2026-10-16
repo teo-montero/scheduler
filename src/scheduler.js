@@ -9,16 +9,19 @@ export function scheduleTasks({ tasks, events = [], blocked = [], preferences = 
   const horizon = atTime(addDays(firstDay, config.horizonDays)).getTime();
   const occupied = [...events, ...blocked].map(e => ({ start: new Date(e.start).getTime(), end: new Date(e.end).getTime() })).filter(e => Number.isFinite(e.start) && e.end > e.start);
   const blocks = [], unscheduled = [];
-  const pending = tasks.filter(t => !t.completed).sort((a, b) => (a.dueDate ? new Date(a.dueDate).getTime() : Infinity) - (b.dueDate ? new Date(b.dueDate).getTime() : Infinity) || String(a.id).localeCompare(String(b.id)));
+  const pending = tasks.filter(t => !t.completed && t.includeInPlan !== false && !t.needsEstimate).sort((a, b) => (a.dueDate ? new Date(a.dueDate).getTime() : Infinity) - (b.dueDate ? new Date(b.dueDate).getTime() : Infinity) || String(a.id).localeCompare(String(b.id)));
   for (const task of pending) {
     let remaining = Math.max(0, Math.round(Number(task.estimatedMinutes) || 120));
     const deadline = task.dueDate ? new Date(task.dueDate).getTime() : horizon;
     if (!Number.isFinite(deadline)) { unscheduled.push({ taskId: task.id, minutes: remaining, reason: 'Invalid deadline' }); continue; }
+    const availableFrom = task.notBefore ? new Date(task.notBefore).getTime() : start;
+    if (!Number.isFinite(availableFrom)) { unscheduled.push({ taskId: task.id, minutes: remaining, reason: 'Invalid teaching date' }); continue; }
+    if (availableFrom >= horizon && !task.dueDate) continue; // Future teaching belongs to the course backlog.
     const preference = preferences[task.id];
     for (let day = 0; day < config.horizonDays && remaining > 0; day++) {
       const key = addDays(firstDay, day);
       if ((!config.weekends && [0, 6].includes(weekday(key))) || (preference?.date && key !== preference.date)) continue;
-      let cursor = Math.max(start, atTime(key, config.startHour).getTime());
+      let cursor = Math.max(start, availableFrom, atTime(key, config.startHour).getTime());
       // Use a five-minute grid without advancing beyond a deadline.
       cursor = Math.ceil(cursor / ms(5)) * ms(5);
       const end = Math.min(atTime(key, config.endHour).getTime(), deadline, horizon);

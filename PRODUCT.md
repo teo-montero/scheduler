@@ -16,13 +16,13 @@ Study Space turns Moodle deadlines and a university timetable into a practical w
 
 ## Operating Context
 
-A Chrome Manifest V3 extension with a browser preview. Students review their week, add or complete tasks, inspect module progress, import a timetable, and adjust availability through local commands.
+A Chrome Manifest V3 extension with a browser preview. Students review their week, add or complete tasks, inspect module progress, import a timetable, and adjust availability through common local commands and AI-assisted chat.
 
 ## Capabilities and Constraints
 
 - Preserve Moodle sync, calendar subscription and ICS import, task management, module filtering, scheduling preferences, personal time, and local commands.
-- Keep business logic, API contracts, data model and London timezone handling unchanged.
-- All data remains on the device. No analytics, remote scripts, remote fonts or AI service.
+- Keep integrations and planner logic in reusable modules, separate from HTML/CSS and view bindings. Preserve London timezone handling.
+- Workspace data is saved locally. Selected metadata is sent to Gemini by a local Node backend when AI analysis/planning/chat is requested. API keys stay in ignored local configuration. No analytics, remote scripts or remote fonts.
 - Use the existing JavaScript modules, HTML, CSS, SVG icons and esbuild stack.
 - Sample workspace data is illustrative and must remain clearly labelled.
 

@@ -30,7 +30,8 @@ for (const folder of ['.', 'dist']) {
     await page.waitForFunction(() => document.querySelector('#toast').textContent.includes('Open Moodle'));
     console.log(`${folder}: Chrome accepted manifest, worker and dashboard; no-session error handled.`);
     await exerciseSetup(context, 'chrome-extension://' + extensionId);
-    console.log(folder + ': setup navigation, Moodle link, activity editing and zero-persistence boundary passed.');
+    console.log(folder + ': real setup bindings, fetch-only course checks, selection, persistence, commute, weekly events and AI chat/planning passed with simulated providers.');
+    await page.reload(); await page.waitForSelector('.calendar-event');
     if (folder === 'dist') { assert.deepEqual(errors, []); continue; }
 
     // Each navigation destination has an accurate title and current-page state.
@@ -99,6 +100,9 @@ for (const folder of ['.', 'dist']) {
     await page.bringToFront(); await page.getByRole('button', { name: 'Sync Moodle', exact: true }).click();
     await page.waitForFunction(() => document.querySelector('#mode-badge').textContent.includes('Your workspace'));
     assert.ok(seenMethods.includes('core_course_get_enrolled_courses_by_timeline_classification'));
+    assert.ok(!seenMethods.includes('core_calendar_get_action_events_by_timesort'));
+    await page.locator('#refresh-deadlines-button').click();
+    await page.waitForFunction(() => document.querySelector('#toast').textContent.includes('Moodle deadlines refreshed'));
     assert.ok(seenMethods.includes('core_calendar_get_action_events_by_timesort'));
     assert.ok(apiRequests.every(r => new URL(r.url).searchParams.get('sesskey') === 'synthetic-session-key'));
     const data = await worker.evaluate(async () => (await chrome.storage.local.get('workspace')).workspace);
@@ -113,8 +117,9 @@ for (const folder of ['.', 'dist']) {
     assert.equal(await page.locator('#task-title').isDisabled(), true);
     assert.equal(await page.evaluate(() => document.activeElement.id), 'task-estimate');
     await page.locator('#task-estimate').fill('180'); await page.getByRole('button', { name: 'Save task', exact: true }).click();
-    await page.getByRole('button', { name: 'Sync Moodle', exact: true }).click();
-    await page.waitForFunction(() => !document.querySelector('#sync-button').disabled);
+    await page.locator('[data-view="courses"]').click();
+    await page.locator('#refresh-deadlines-button').click();
+    await page.waitForFunction(() => document.querySelector('#toast').textContent.includes('Moodle deadlines refreshed'));
     assert.equal((await worker.evaluate(async () => (await chrome.storage.local.get('workspace')).workspace)).tasks[0].estimatedMinutes, 180);
     console.log('Full MAIN-world Moodle sync passed with simulated data; sample removal, entity decoding, estimate persistence and no credential storage verified.');
 

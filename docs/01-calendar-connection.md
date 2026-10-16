@@ -1,6 +1,6 @@
 # 1. Calendar connection
 
-This guide explains how Study Space 1.0.1 turns a UCL timetable subscription link into classes in the planner. The connection runs entirely in the Chrome extension; there is no application server.
+This guide explains how Study Space 1.2.0 turns a UCL timetable subscription link into classes in the planner. The connection runs entirely in the Chrome extension; calendar downloads do not use the Gemini backend.
 
 ## The basic approach
 
