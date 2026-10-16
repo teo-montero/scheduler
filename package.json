@@ -1,20 +1,23 @@
 {
   "name": "ucl-study-planner",
-  "version": "1.0.1",
+  "version": "1.2.6",
   "private": true,
   "type": "module",
   "scripts": {
     "build": "node scripts/build.mjs",
     "dev": "node --env-file-if-exists=.env.local scripts/serve.mjs",
     "test": "node -e \"process.env.TZ='Europe/London'; const tests=require('node:fs').readdirSync('tests').filter(name=>name.endsWith('.test.js')).map(name=>'tests/'+name); const result=require('node:child_process').spawnSync(process.execPath,['--test',...tests],{stdio:'inherit'}); process.exit(result.status ?? 1)\"",
-    "check": "node --check src/dashboard.js && node --check src/background.js && npm test && npm run build",
-    "test:browser": "npm run build && node tests/browser.mjs"
+    "check": "node --check src/dashboard.js && node --check src/background.js && node --check src/setup.js && npm test && npm run build",
+    "test:browser": "npm run build && node tests/browser.mjs",
+    "ai": "node server/index.js",
+    "ai:check": "node scripts/test-ai.mjs"
   },
   "dependencies": {
+    "@google/genai": "^2.30.0",
     "ical.js": "2.2.1"
   },
   "devDependencies": {
-    "esbuild": "0.25.12",
-    "@playwright/test": "1.56.1"
+    "@playwright/test": "1.56.1",
+    "esbuild": "0.25.12"
   }
 }

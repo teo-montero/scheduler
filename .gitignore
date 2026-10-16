@@ -27,3 +27,7 @@ test-results/
 
 # Local credentials
 /credentials.json
+
+# Upstream local Moodle diagnostics
+/moodle-check.js
+/moodle-local.json

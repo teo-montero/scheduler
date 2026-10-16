@@ -44,3 +44,7 @@ Preserve the Study Space name, existing mark and English product language. The u
 ## Accessibility & Inclusion
 
 The user's brief requires keyboard focus, clear interactive states, basic accessibility and solid desktop, laptop, tablet and mobile behaviour. Target WCAG AA text contrast and reduced-motion support.
+
+## Scraping integration
+
+The upstream Moodle and UCL adapters and planner services are present. Existing Sync Moodle collects modules, full course snapshots and deadlines without invoking AI. Preserve the timetable, OpenAI chat and setup preview; upstream Gemini planning and the diagnostic panel are available but not activated by this merge.

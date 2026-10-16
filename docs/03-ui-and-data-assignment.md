@@ -1,8 +1,8 @@
 # 3. UI design and data assignment algorithm
 
-This guide explains how Study Space 1.0.1 presents the planner, assigns incoming data to its internal models, and allocates tasks to study sessions. “Assignment” here covers both field mapping and the scheduling of study time.
+This guide explains how Study Space 1.2.0 presents the planner, assigns incoming data to its internal models, and allocates tasks to study sessions. “Assignment” here covers both field mapping and the scheduling of study time.
 
-The interface uses HTML, CSS and JavaScript modules. There is no React layer, remote UI service or language-model dependency. `esbuild` bundles the application and its calendar dependency into files that Chrome can load locally.
+The interface uses HTML, CSS and JavaScript modules. Rendering, commands and scheduling run locally. Gemini analyses course metadata through a separate local backend. `esbuild` bundles the application and its calendar dependency into files that Chrome can load locally.
 
 ## Source map
 
@@ -11,6 +11,7 @@ The interface uses HTML, CSS and JavaScript modules. There is no React layer, re
 | [dashboard.html](../dashboard.html) | Page structure, forms, dialogs and reusable SVG icon symbols. |
 | [styles.css](../styles.css) | Colours, typography, layout, calendar blocks and responsive behaviour. |
 | [src/dashboard.js](../src/dashboard.js) | Workspace state, event handlers, rendering, integration results and persistence. |
+| [src/modules.js](../src/modules.js) | Apply saved module choices to the tasks considered by the planner. |
 | [src/scheduler.js](../src/scheduler.js) | Allocate unfinished tasks to free intervals. |
 | [src/commands.js](../src/commands.js) | Interpret the supported local text commands. |
 | [src/dates.js](../src/dates.js) | London dates, week boundaries and formatting. |
@@ -62,11 +63,14 @@ The dashboard holds one `state` object. Its main collections deliberately repres
 | State field | Contents | Owner/source |
 | --- | --- | --- |
 | `courses` | Module IDs, names and short names. | Moodle sync. |
-| `tasks` | Work to complete, estimates, deadlines and completion flags. | Moodle and manually added tasks. |
+| `tasks` | Reconciled work, estimates, deadlines and completion flags. | Source metadata, validated Gemini suggestions and local edits. |
+| `courseContent` | Per-course normalised index, content fingerprint, fetch date, saved analysis and usage. | Selected course fetches and Gemini responses. |
+| `moodleCalendarTasks` | Last successfully fetched calendar actions, before deduplication. | Optional Moodle deadline refresh. |
 | `events` | Fixed timetable appointments. | Subscription or ICS import. |
 | `blocked` | Personal unavailable intervals. | Local commands and removals. |
 | `blocks` | Generated study sessions linked to tasks. | Scheduling engine. |
 | `unscheduled` | Task IDs, remaining minutes and reasons. | Scheduling engine. |
+| `excludedCourseIds` | String course IDs excluded from the plan. Empty/missing means all modules included. | My modules checkboxes and bulk controls. |
 | `preferences` | A requested study date keyed by task ID. | Move commands; cleared when editing that task. |
 | `settings` | Study hours, block length, break length, weekend policy and horizon. | Preferences form. |
 | `messages` | Recent local command conversation. | Command interface. |
@@ -81,7 +85,12 @@ A missing or unusable saved workspace starts with labelled sample data. The firs
 
 ```mermaid
 flowchart TD
-    M[Moodle JSON] --> T[Normalised tasks and courses]
+    M[Moodle enrolled courses] --> C[Module checklist]
+    C --> F[Selected course indexes saved locally]
+    F --> AI[Gemini task suggestions]
+    AI --> V[Validate IDs and estimates]
+    V --> T[Tasks with original source links]
+    D[Optional Moodle deadline refresh] --> T
     I[ICS feed] --> E[Normalised timetable events]
     U[Task edits and personal availability] --> S[Workspace state]
     T --> S
@@ -113,8 +122,8 @@ It keeps intervals overlapping the selected Monday-to-Sunday week. The `source` 
 | --- | --- |
 | Focus time this week | Sum of durations of generated study blocks overlapping the selected week. |
 | Focus session count | Number of those study blocks. |
-| To-do count | All unfinished tasks in the workspace, not just this week’s deadlines. |
-| Completed count | Number of completed tasks. |
+| To-do count | Unfinished tasks in included modules plus independent personal tasks, not just this week’s deadlines. |
+| Completed count | Number of completed tasks currently considered by module selection. |
 | Plan health | Number of tasks with remaining unscheduled work across the planning horizon. |
 | Module progress | Completed task count divided by total task count for that course. |
 
@@ -156,7 +165,9 @@ The scheduler accepts settings as inputs rather than reading the interface or st
 
 ### Step 1: Prepare priorities and occupied intervals
 
-Completed tasks are excluded. Remaining tasks are sorted by ascending deadline; tasks without a deadline come last. Equal deadlines are resolved by task ID.
+Before calling the allocator, `schedulableTasks(state)` removes work belonging to excluded modules, optional work left outside the plan, and tasks still needing an estimate. All timetable events still enter the occupied intervals, and independent personal tasks remain eligible. Module exclusions preserve imported tasks and local estimates/completion flags; changing a checkbox saves the choice and rebuilds the plan. The first Moodle sync opens this selection view, and saved exclusions persist across subsequent syncs.
+
+Completed tasks are excluded. Gemini provides workload estimates and can propose calendar slots. `src/planner/planning.js` validates these proposals and applies travel/location constraints. The allocator below remains the legacy deadline-first algorithm; see [the planner API](04-planner-api.md) for the shared service, current fallback, daily cap and weekly personal events. Remaining tasks are sorted by ascending deadline; tasks without a deadline come last. Equal deadlines are resolved by task ID.
 
 Existing timetable events and personal-time blocks become occupied intervals. Invalid or nonpositive occupied intervals are discarded. Previously generated study blocks are not supplied as fixed commitments: the new run rebuilds them.
 
@@ -168,7 +179,7 @@ For each task, inspect days from today through the horizon:
 
 - Skip weekends unless enabled.
 - If the task has a date preference, consider only that date.
-- Start no earlier than both now and that day’s study-start time.
+- Start no earlier than now, that day’s study-start time, and the source section’s recognised teaching-week start. Undated work from weeks beyond the planning horizon stays in the backlog.
 - Round that initial daily cursor up to the next five-minute boundary.
 - End at the earliest of the study-end time, task deadline and planning horizon.
 
@@ -239,6 +250,14 @@ Suppose a task requires 120 minutes, is due Monday at 17:00, and planning begins
 | 12:30–12:50 | Study for 20 minutes. | 0 minutes. |
 
 If the same 120-minute task instead had a 10:00 deadline and no lecture, only the first 50-minute block would fit under these break rules. The remaining 70 minutes would be reported as unscheduled.
+
+## Reviewing extracted work
+
+The module view shows which course indexes are saved and whether their analysis is current. Fetching and analysis have separate progress and error states: failure keeps saved content and previous tasks. Each successful course is persisted independently.
+
+A task records its source activity ID/URL, section, Moodle completion status, Gemini category, estimate, confidence and reasoning. The editor shows these details and opens the original Moodle resource. Estimates appear with `~` when supplied by Gemini. Optional tasks remain visible with an **Optional** badge and start outside the calendar; the student can opt them in. A missing workload estimate appears as **Estimate needed** until edited. Completion updates this planner, without submitting work or changing Moodle.
+
+Names and estimates from the model cannot choose arbitrary URLs or invent dates: source IDs resolve to saved activity records. Moodle deadlines are merged by course/activity ID. Local estimate, inclusion and completion overrides survive later imports.
 
 ## How edits and commands trigger reassignment
 

@@ -25,8 +25,8 @@ export function createDemo(now = new Date()) {
     ]) events.push({ id: `demo-event-${week}-${day}-${hour}`, title, courseId, location, start: atTime(addDays(monday, day + week * 7), hour).toISOString(), end: atTime(addDays(monday, day + week * 7), hour + length).toISOString(), source: 'ucl-timetable' });
   }
   const plan = scheduleTasks({ tasks, events, now: atTime(monday, 9) });
-  return { version: 1, mode: 'demo', courses, tasks, events, blocked: [], preferences: {}, settings: { ...DEFAULT_SETTINGS }, calendarUrl: '', moodleSyncedAt: null, calendarSyncedAt: null, ...plan, messages: [] };
+  return { version: 1, mode: 'demo', courseContent: {}, moodleCalendarTasks: [], excludedCourseIds: [], courses, tasks, events, blocked: [], preferences: {}, settings: { ...DEFAULT_SETTINGS }, calendarUrl: '', moodleSyncedAt: null, calendarSyncedAt: null, ...plan, messages: [] };
 }
 export function emptyWorkspace(settings = DEFAULT_SETTINGS) {
-  return { version: 1, mode: 'live', courses: [], tasks: [], events: [], blocked: [], preferences: {}, settings: { ...settings }, calendarUrl: '', moodleSyncedAt: null, calendarSyncedAt: null, blocks: [], unscheduled: [], messages: [] };
+  return { version: 1, mode: 'live', courseContent: {}, moodleCalendarTasks: [], excludedCourseIds: [], courses: [], tasks: [], events: [], blocked: [], preferences: {}, settings: { ...settings }, calendarUrl: '', moodleSyncedAt: null, calendarSyncedAt: null, blocks: [], unscheduled: [], messages: [] };
 }

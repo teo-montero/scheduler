@@ -1,3 +1,7 @@
+import { createBrowserPlanner } from './planner/index.js';
+import { normalizeWorkspace } from './planner/storage.js';
+import { consideredTasks } from './modules.js';
+const planner = createBrowserPlanner();
 import { prepareAssistantEvents, calendarEventType, calendarEventClass } from './assistant-events.js';
 import { fetchAssistant } from './assistant-client.js';
 import { createCalendarPreview } from './calendar-preview.js';
@@ -23,7 +27,7 @@ const VIEWS = {
 };
 let state, currentWeek = weekStart(), currentView = 'week', selectedCourse = null, agendaDay = null, toastTimer, syncing = false, calendarSyncing = false, chatBusy = false;
 const calendarPreview = createCalendarPreview({
-  getEvents: () => [...(state?.events || []), ...(state?.blocks || []), ...(state?.blocked || [])],
+  getEvents: () => [...(state?.events || []), ...(state?.blocks || []), ...(state?.blocked || []), ...(state?.personalEvents || [])],
   refresh: renderPreviewCalendar, openInfo: openEvent, announce: toast
 });
 function renderPreviewCalendar() {
@@ -49,13 +53,13 @@ async function persist() {
   } catch { toast('Your browser could not save this workspace. Changes will last only while this page is open.', true); }
 }
 function regenerate() {
-  const plan = scheduleTasks({ tasks: state.tasks, events: state.events, blocked: state.blocked, preferences: state.preferences, settings: state.settings });
+  const plan = scheduleTasks({ tasks: consideredTasks(state), events: state.events, blocked: [...state.blocked, ...(state.personalEvents || [])], preferences: state.preferences, settings: state.settings });
   state.blocks = plan.blocks; state.unscheduled = plan.unscheduled;
 }
 async function changeAndRender(replan = true) { if (replan) regenerate(); await persist(); render(); }
 function weekEvents() {
   const start = atTime(currentWeek), end = atTime(addDays(currentWeek, 7));
-  return [...state.events, ...state.blocks, ...state.blocked].filter(e => new Date(e.end) > start && new Date(e.start) < end);
+  return [...state.events, ...state.blocks, ...state.blocked, ...(state.personalEvents || [])].filter(e => new Date(e.end) > start && new Date(e.start) < end);
 }
 function dueLabel(task) {
   if (!task.dueDate) return { text: 'No deadline', className: '' };
@@ -221,7 +225,7 @@ function openTask(task = null) {
 }
 function safeMoodleUrl(value) { try { const url = new URL(value); return url.protocol === 'https:' && url.hostname === 'moodle.ucl.ac.uk' ? url.href : null; } catch { return null; } }
 function openEvent(id) {
-  const event = calendarPreview.project([...state.events, ...state.blocks, ...state.blocked]).find(e => e.id === id);
+  const event = calendarPreview.project([...state.events, ...state.blocks, ...state.blocked, ...(state.personalEvents || [])]).find(e => e.id === id);
   if (!event) return;
   const task = state.tasks.find(t => t.id === event.taskId), url = safeMoodleUrl(task?.url);
   $('#event-detail').innerHTML = `<h2 id="event-title">${escape(event.title)}</h2><p>${calendarEventType(event) === 'study' ? 'Study session' : calendarEventType(event) === 'user_time' ? 'Personal time' : 'Lecture'} · ${formatDate(event.start, { weekday: 'long' })}<br>${event.allDay ? 'All day' : `${formatTime(event.start)} – ${formatTime(event.end)}`} · London time${event.location ? `<br>${escape(event.location)}` : ''}</p>${event.description ? `<p class="event-detail-note">${escape(event.description)}</p>` : ''}${task ? `<p class="event-detail-note">Part of ${durationLabel(task.estimatedMinutes)} of planned work${task.dueDate ? ` · due ${formatDate(task.dueDate)}, ${formatTime(task.dueDate)}` : ''}. Complete the task when all its work is done.</p><button class="button primary" data-complete="${escape(task.id)}">${icon('check')}Mark task complete</button> <button class="button secondary" data-edit-task="${escape(task.id)}">Edit task</button>${url ? `<p><a class="text-link" href="${escape(url)}" target="_blank" rel="noopener noreferrer">Open in Moodle ${icon('external')}</a></p>` : ''}` : ['personal', 'assistant'].includes(event.source) ? `<button class="button secondary" data-remove-block="${escape(event.id)}">Remove event</button>` : ''}`;
@@ -251,14 +255,16 @@ async function syncMoodle() {
   if (syncing) return;
   syncing = true; $('#sync-button').disabled = true; $('#sync-button svg').classList.add('spin'); $('#sync-button span').textContent = 'Syncing…';
   try {
-    const result = await extensionRequest({ type: 'SYNC_MOODLE' });
-    if (state.mode === 'demo') state = emptyWorkspace(state.settings);
-    const existing = new Map(state.tasks.map(t => [t.id, t]));
-    if (result.tasks !== null) state.tasks = [...state.tasks.filter(t => t.source !== 'moodle' || (t.completed && !result.tasks.some(incoming => incoming.id === t.id))), ...result.tasks.map(t => ({ ...t, completed: existing.get(t.id)?.completed || false, estimatedMinutes: existing.get(t.id)?.estimatedMinutes ?? t.estimatedMinutes }))];
-    state.courses = result.courses; state.moodleSyncedAt = new Date().toISOString(); selectedCourse = null;
-    await changeAndRender();
-    toast(result.warnings?.length ? result.warnings.join(' ') : `${result.courses.length} modules and ${result.tasks.length} deadlines synced. Your plan is up to date.`, Boolean(result.warnings?.length));
-  } catch (error) { toast(error.message, true); }
+    await persist();
+    const loaded = await planner.loadCourses(); state = loaded.workspace; selectedCourse = null;
+    const fetched = await planner.fetchSelectedCourses(); state = fetched.workspace;
+    const warnings = [...loaded.warnings, ...(fetched.warnings || []), ...fetched.errors.map(error => error.message)];
+    try { const deadlines = await planner.refreshDeadlines(); state = deadlines.workspace; warnings.push(...deadlines.warnings); }
+    catch (error) { warnings.push(error.message); }
+    render();
+    const message = state.courses.length + ' modules synced. Course content and deadlines saved.';
+    toast([message, ...warnings].join(' '), Boolean(warnings.length));
+  } catch (error) { render(); toast(error.message, true); }
   finally { syncing = false; $('#sync-button').disabled = false; $('#sync-button svg').classList.remove('spin'); $('#sync-button span').textContent = 'Sync Moodle'; }
 }
 async function replaceTimetable(events, url = '') {
@@ -328,14 +334,14 @@ async function submitChat(text) {
     const payload = {
       messages: state.messages.slice(-12).map(({ role, text }) => ({ role, text: text.slice(0, 2000) })),
       selectedWeek: currentWeek,
-      calendar: [...state.events, ...state.blocked].filter(event => new Date(event.end) >= new Date()).sort((a, b) => new Date(a.start) - new Date(b.start)).slice(0, 500).map(({ title, start, end }) => ({ title: title.slice(0, 200), start, end }))
+      calendar: [...state.events, ...state.blocked, ...(state.personalEvents || [])].filter(event => new Date(event.end) >= new Date()).sort((a, b) => new Date(a.start) - new Date(b.start)).slice(0, 500).map(({ title, start, end }) => ({ title: title.slice(0, 200), start, end }))
     };
     const { result } = isExtension ? await extensionRequest({ type: 'ASSISTANT_CHAT', payload }) : await fetchAssistant(payload);
     if (state !== workspace) { toast('Your workspace changed. Please send the request again.'); return; }
-    const { additions, duplicates } = prepareAssistantEvents(result, [...state.events, ...state.blocked]);
+    const { additions, duplicates } = prepareAssistantEvents(result, [...state.events, ...state.blocked, ...(state.personalEvents || [])]);
     if (additions.length) {
       const blocked = [...state.blocked, ...additions];
-      const plan = scheduleTasks({ tasks: state.tasks, events: state.events, blocked, preferences: state.preferences, settings: state.settings });
+      const plan = scheduleTasks({ tasks: consideredTasks(state), events: state.events, blocked: [...blocked, ...(state.personalEvents || [])], preferences: state.preferences, settings: state.settings });
       Object.assign(state, { blocked, ...plan });
       currentWeek = weekStart(additions[0].start); agendaDay = dateKey(additions[0].start);
       response = 'Added to your calendar: ' + additions.map(event => event.title + ' · ' + formatDate(event.start, { weekday: 'short' }) + ', ' + formatTime(event.start) + '–' + formatTime(event.end)).join('; ') + '. London time.';
@@ -376,7 +382,7 @@ async function init() {
   try {
     state = isExtension ? (await chrome.storage.local.get('workspace')).workspace : JSON.parse(localStorage.getItem('studyspace-workspace-v1') || 'null');
     if (state?.version !== 1 || !Array.isArray(state.tasks) || !Array.isArray(state.events)) state = createDemo();
-    state.preferences ||= {}; state.blocked ||= []; state.messages ||= [];
+    state = normalizeWorkspace(state); state.preferences ||= {}; state.blocked ||= []; state.messages ||= [];
   } catch { state = createDemo(); }
   for (let hour = 5; hour <= 23; hour++) {
     if (hour <= 21) $('#start-hour').add(new Option(`${String(hour).padStart(2, '0')}:00`, hour));

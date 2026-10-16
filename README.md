@@ -91,3 +91,11 @@ The established “Finished maths problem sheet” and “Move maths problem she
 Source is in `src/`; `dashboard.html` and `styles.css` define the UI; `scripts/build.mjs` bundles all dependencies locally into root runtime files and copies a clean distribution to `dist/`.
 
 API references: [Chrome scripting](https://developer.chrome.com/docs/extensions/reference/api/scripting), [Moodle calendar external API](https://github.com/moodle/moodle/blob/MOODLE_405_STABLE/calendar/externallib.php), [ical.js](https://github.com/kewisch/ical.js).
+
+## Upstream scraping integration (16 October 2026)
+
+Merged origin/main through 0809449 while retaining the timetable-first UI, calendar editing preview, vertical OpenAI assistant, and onboarding preview. Sync Moodle now uses the upstream connection/service modules to fetch enrolled modules, selected-course content and deadlines; the timetable uses the upstream UCL adapter. No AI course analysis is triggered by this sync.
+
+Scraped course data is stored in workspace.courseContent (per-course state and fingerprint); calendar deadlines in workspace.moodleCalendarTasks; UCL events in workspace.events. Upstream planner, analysis and Gemini server modules are available for the next integration step. The current assistant still uses OpenAI via the server on port 4173. The upstream direct-API debug panel and forced setup redirect are not mounted over the existing frontend.
+
+Snapshot before merging: branch backup/frontend-before-logic-20261016. Local .env.local, credentials.json and moodle-local.json remain ignored. The upstream fixtures are sample fallbacks: sync surfaces their warnings and stores the dataSource metadata; they are not proof of a live Moodle connection.

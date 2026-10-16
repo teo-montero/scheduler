@@ -1,9 +1,11 @@
 import { build } from 'esbuild';
-import { cp, mkdir, rm } from 'node:fs/promises';
+import { cp, mkdir, rm, access } from 'node:fs/promises';
 // Emit runtime bundles beside the root manifest, so the original project folder
 // remains loadable with Chrome's Load unpacked button.
-await build({ entryPoints: ['src/dashboard.js', 'src/background.js', 'src/setup.js'], bundle: true, outdir: '.', format: 'esm', target: 'chrome111', sourcemap: false, legalComments: 'eof' });
+await build({ entryPoints: ['src/dashboard.js', 'src/background.js', 'src/setup.js', 'src/moodle-check.js'], bundle: true, outdir: '.', format: 'esm', target: 'chrome111', sourcemap: false, legalComments: 'eof' });
 await rm('dist', { recursive: true, force: true });
 await mkdir('dist', { recursive: true });
-for (const path of ['manifest.json', 'dashboard.html', 'dashboard.js', 'background.js', 'styles.css', 'setup.html', 'setup.css', 'setup.js', 'assets']) await cp(path, `dist/${path}`, { recursive: true });
+for (const path of ['manifest.json', 'dashboard.html', 'dashboard.js', 'background.js', 'styles.css', 'setup.html', 'setup.css', 'setup.js', 'moodle-check.js', 'assets']) await cp(path, `dist/${path}`, { recursive: true });
 console.log('Built extension. Load this project folder or dist/ in chrome://extensions.');
+
+try { await access('moodle-local.json'); await cp('moodle-local.json', 'dist/moodle-local.json'); } catch (error) { if (error.code !== 'ENOENT') throw error; }
