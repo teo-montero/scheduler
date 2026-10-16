@@ -62,7 +62,13 @@ export function buildPlanningContext(workspace, now = new Date()) {
   const windows = [], commutes = [], locationBlocks = [];
   const tasks = schedulableTasks(workspace).filter(t => !t.completed).map(t => ({
     id: String(t.id), courseId: t.courseId || null, title: plainText(t.title).slice(0, 180), courseName: plainText(t.courseName).slice(0, 100),
-    estimatedMinutes: t.estimatedMinutes, dueDate: t.dueDate || null, notBefore: t.notBefore || null,
+    category: t.category || null, sourceTitle: plainText(t.sourceTitle).slice(0, 180), sectionName: plainText(t.sectionName).slice(0, 200),
+    weekNumber: t.weekNumber ?? null, teachingWeekStart: t.teachingWeekEnd ? t.notBefore || null : null, teachingWeekEnd: t.teachingWeekEnd || null,
+    // Moodle teaching-week labels are not release dates. Allow a sheet to be
+    // prepared in the prior week while retaining its actual teaching context.
+    estimatedMinutes: t.estimatedMinutes, dueDate: t.dueDate || null,
+    notBefore: t.source === 'moodle-content' && t.category === 'exercise' && t.teachingWeekEnd && t.notBefore
+      ? atTime(addDays(dateKey(t.notBefore), -7)).toISOString() : t.notBefore || null,
     preferredDate: workspace.preferences?.[t.id]?.date || null
   }));
   for (const task of tasks) if (!Number.isInteger(task.estimatedMinutes) || task.estimatedMinutes < 1 || task.estimatedMinutes > 6000 || task.dueDate && !Number.isFinite(stamp(task.dueDate)) || task.notBefore && !Number.isFinite(stamp(task.notBefore))) throw new Error(`Invalid workload or date for ${task.title}.`);
