@@ -1,6 +1,6 @@
 import { atTime } from './dates.js';
 
-export const ANALYSIS_CACHE_VERSION = 'study-tasks-gemini-1';
+export const ANALYSIS_CACHE_VERSION = 'study-tasks-gemini-4-week-ahead';
 const ENTITIES = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ' };
 export function plainText(value) {
   return String(value ?? '').replace(/<(script|style)\b[^>]*>[\s\S]*?<\/\1>/gi, '').replace(/<[^>]*>/g, ' ')
