@@ -3,26 +3,31 @@ export async function readMoodleInPage(options = {}) {
   try {
     const sesskey = window.M?.cfg?.sesskey;
     if (!sesskey) throw new Error('Open your Moodle dashboard and sign in, then try syncing again.');
+    const debug = value => JSON.parse(JSON.stringify(value ?? null, (key, item) => {
+      if (/^(?:authorization|cookie|set-cookie|sesskey|api_?key)$/i.test(key)) return '[redacted]';
+      return typeof item === 'string' ? item.replaceAll(sesskey, '[redacted]').replace(/([?&](?:sesskey|token|key)=)[^&#\s]+/gi, '$1[redacted]') : item;
+    }));
     async function moodleCall(methodname, args = {}) {
       const url = new URL('/lib/ajax/service.php', window.location.origin);
       url.search = new URLSearchParams({ sesskey, info: methodname }).toString();
       const started = Date.now();
       const details = { method: methodname, ...(args.courseid ? { courseId: args.courseid } : {}), ...(args.offset !== undefined ? { offset: args.offset, limit: args.limit } : {}) };
-      console.info('[Study Space][Moodle] API request', details);
+      console.info('[Study Space][Moodle] API request', { ...details, url: debug(url.href), httpMethod: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }, body: debug([{ index: 0, methodname, args }]) });
       let httpStatus;
       try {
         const response = await fetch(url, { method: 'POST', credentials: 'include', signal: AbortSignal.timeout(20000), headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }, body: JSON.stringify([{ index: 0, methodname, args }]) });
         httpStatus = response.status;
-        if (!response.ok) throw new Error(`Moodle returned HTTP ${response.status}. Try signing in again.`);
+        if (!response.ok) { console.warn('[Study Space][Moodle] HTTP error response', { httpStatus, body: debug(await response.text()) }); throw new Error(`Moodle returned HTTP ${response.status}. Try signing in again.`); }
         let result;
         try { result = await response.json(); } catch { throw new Error('Moodle returned a sign-in page. Sign in and retry.'); }
+        console.info('[Study Space][Moodle] Raw API response', { method: methodname, httpStatus, body: debug(result) });
         if (!Array.isArray(result) || !result[0] || result[0].error) throw new Error('Moodle could not complete this request. Refresh your signed-in tab and retry.');
         const data = result[0].data;
         let summary = data;
         if (typeof data === 'string') { try { summary = JSON.parse(data); } catch { summary = null; } }
         console.info('[Study Space][Moodle] API response', { ...details, httpStatus, durationMs: Date.now() - started,
           ...(summary?.courses ? { courses: summary.courses.length } : {}), ...(summary?.events ? { events: summary.events.length } : {}),
-          ...(summary?.section ? { sections: summary.section.length, activities: summary.cm?.length || 0 } : {}) });
+          ...(summary?.section ? { sections: summary.section.length, activities: summary.cm?.length || 0 } : {}), parsedData: debug(summary) });
         return data;
       } catch (error) {
         console.warn('[Study Space][Moodle] API failed', { ...details, httpStatus, durationMs: Date.now() - started, errorType: error.name });
