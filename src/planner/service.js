@@ -1,6 +1,6 @@
 import { emptyWorkspace } from '../demo.js';
 import { ANALYSIS_CACHE_VERSION, courseFingerprint, reconcileMoodleWorkspace, tasksFromAnalysis } from '../course-content.js';
-import { isCourseIncluded, consideredTasks } from '../modules.js';
+import { hasSampleData, isCourseIncluded, consideredTasks } from '../modules.js';
 import { parseTimetable, validateCalendarUrl } from '../ical.js';
 import { normalizeWorkspace } from './storage.js';
 import { generateWorkspacePlan, normalizePersonal, normalizeWeeklyActivities } from './planning.js';
@@ -61,6 +61,7 @@ export function createPlannerService({ storage, connections, ai, now = () => new
     }),
     analyseSelectedCourses: ({ force = false } = {}) => run(async () => {
       let state = await load(); const errors = [];
+      if (hasSampleData(state)) return { workspace: state, errors: [{ courseId: null, message: 'Sample workspace: connect Moodle before analysing courses. No AI request was made.' }] };
       const courses = state.courses.filter(c => isCourseIncluded(state, c.id));
       for (const [index, course] of courses.entries()) {
         const snapshot = state.courseContent[course.id];
@@ -98,6 +99,7 @@ export function createPlannerService({ storage, connections, ai, now = () => new
       let command = parseCommand(message, tasks, now()), response;
       // Fast local commands remain available without a provider. Free-form requests use the AI provider.
       if (command.error) {
+        if (hasSampleData(state)) return { workspace: state, reply: 'This is sample data. Connect Moodle or your timetable before using AI chat. No AI request was made.', applied: false };
         response = await ai.chat({ message, now: now().toISOString(), tasks: tasks.map(({ id, title, courseName }) => ({ id, title, courseName })) });
         if (response.clarification) return { workspace: state, reply: response.clarification, applied: false };
         const changed = applyChatActions(state, response.actions, now());

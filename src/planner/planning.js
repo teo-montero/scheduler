@@ -1,6 +1,6 @@
 import { addDays, atTime, dateKey, weekday, TIME_ZONE } from '../dates.js';
 import { DEFAULT_SETTINGS } from '../scheduler.js';
-import { schedulableTasks } from '../modules.js';
+import { hasSampleData, schedulableTasks } from '../modules.js';
 import { plainText } from '../course-content.js';
 
 const minute = 60000;
@@ -152,6 +152,10 @@ export function localStudyPlan(context) {
 export async function generateWorkspacePlan(workspace, { ai, now = new Date(), useAI = true } = {}) {
   const context = buildPlanningContext(workspace, now);
   let output, engine = 'local', warning = '';
+  if (useAI && hasSampleData(workspace)) {
+    useAI = false; warning = 'Sample workspace: no AI request was made. Connect Moodle or your timetable before using AI with real data.';
+    console.info('[Study Space][Planner] AI skipped: sample workspace');
+  }
   if (useAI && context.tasks.length) {
     try { if (!ai?.plan) throw new Error('Configure an AI planning provider.'); output = await ai.plan(context); validateStudyPlan(context, output); engine = 'ai'; }
     catch (error) { output = undefined; warning = `AI planning unavailable: ${error.message} A local plan was generated instead.`; engine = 'local-fallback'; }

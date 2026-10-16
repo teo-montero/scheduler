@@ -2,7 +2,7 @@ import { createBrowserPlanner } from './planner/index.js';
 import { createWorkspaceStorage } from './planner/storage.js';
 import { generateWorkspacePlan } from './planner/planning.js';
 import { consideredTasks, isCourseIncluded } from './modules.js';
-import { TIMETABLE_ORIGINS } from './protocol.js';
+import { BUILD_ID, TIMETABLE_ORIGINS } from './protocol.js';
 import { addDays, atTime, dateKey, dateParts, weekStart, minutesOfDay, formatTime, formatDate, durationLabel } from './dates.js';
 import { createDemo, emptyWorkspace } from './demo.js';
 import { validateCalendarUrl } from './ical.js';
@@ -232,18 +232,44 @@ function openEvent(id) {
   $('#event-detail').innerHTML = `<h2 id="event-title">${escape(event.title)}</h2><p>${event.source === 'study' ? 'Study session' : event.source === 'personal' ? 'Personal time' : 'UCL timetable'} · ${formatDate(event.start, { weekday: 'long' })}<br>${event.allDay ? 'All day' : `${formatTime(event.start)} – ${formatTime(event.end)}`} · London time${event.location ? `<br>${escape(event.location)}` : ''}</p>${task ? `<p class="event-detail-note">Part of ${task.needsEstimate ? 'Estimate needed' : `${['ai', 'gemini', 'claude'].includes(task.estimateSource) ? '~' : ''}${durationLabel(task.estimatedMinutes)}`}${task.includeInPlan === false ? ' · Not planned' : ''} of planned work${task.dueDate ? ` · due ${formatDate(task.dueDate)}, ${formatTime(task.dueDate)}` : ''}. Complete the task when all its work is done.</p><button class="button primary" data-complete="${escape(task.id)}">${icon('check')}Mark task complete</button> <button class="button secondary" data-edit-task="${escape(task.id)}">Edit task</button>${url ? `<p><a class="text-link" href="${escape(url)}" target="_blank" rel="noopener noreferrer">Open in Moodle ${icon('external')}</a></p>` : ''}` : event.kind === 'weekly' || event.kind === 'commute' ? '<p><a class="text-link" href="setup.html">Edit your routine in setup</a></p>' : event.source === 'personal' ? `<button class="button secondary" data-remove-block="${escape(event.id)}">Remove personal time</button>` : ''}`;
   $('#event-dialog').showModal();
 }
+function moodleFeedback(message, failed = false) {
+  let status = $('#moodle-sync-feedback');
+  if (!status) {
+    status = document.createElement('p'); status.id = 'moodle-sync-feedback';
+    status.setAttribute('aria-live', 'polite');
+    $('#courses-view .section-heading').after(status);
+  }
+  status.className = failed ? 'form-error' : 'field-help';
+  status.setAttribute('role', failed ? 'alert' : 'status');
+  status.textContent = message;
+  $('#moodle-status').textContent = message;
+}
+function setSyncButton(busy, label = 'Sync Moodle') {
+  const button = $('#sync-button'); button.disabled = busy;
+  const text = button.querySelector('span');
+  if (text) text.textContent = label; else button.textContent = label;
+  button.setAttribute('aria-busy', String(busy));
+}
 async function syncMoodle() {
-  if (syncing) return;
-  syncing = true; $('#sync-button').disabled = true; $('#sync-button span').textContent = 'Syncing…';
+  console.info('[Study Space][UI] Sync Moodle clicked', { buildId: BUILD_ID, busy: syncing, extension: isExtension });
+  if (syncing) { toast('A Moodle operation is already running. Wait for it to finish.', true); return; }
+  syncing = true; setSyncButton(true, 'Syncing…');
+  moodleFeedback('Connecting to your signed-in Moodle tab…');
+  setView('courses');
   try {
-    const result = await planner.loadCourses(); state = result.workspace; selectedCourse = null; setView('courses'); render();
-    toast(result.warnings.join(' ') || `${state.courses.length} modules loaded. Choose modules, then fetch and analyse selected.`, true);
-  } catch (error) { toast(error.message, true); }
-  finally { syncing = false; $('#sync-button').disabled = false; $('#sync-button span').textContent = 'Sync Moodle'; renderCourses(); }
+    // Keep permission requests within the click gesture, as with timetable sync.
+    if (isExtension && chrome.permissions?.request && !await chrome.permissions.request({ origins: ['https://moodle.ucl.ac.uk/*'] })) throw new Error('Moodle site access was not allowed. Allow moodle.ucl.ac.uk for Study Space in chrome://extensions, then try again.');
+    const result = await planner.loadCourses(); state = result.workspace; selectedCourse = null; render();
+    const message = result.warnings.join(' ') || `${state.courses.length} modules loaded. Choose modules, then fetch and analyse selected.`;
+    moodleFeedback(message); toast(message, true);
+  } catch (error) {
+    console.warn('[Study Space][UI] Moodle sync failed', { message: error.message });
+    moodleFeedback(error.message, true); toast(error.message, true);
+  } finally { syncing = false; setSyncButton(false); if (state) renderCourses(); }
 }
 async function buildCoursePlan() {
   if (syncing) return;
-  syncing = true; $('#sync-button').disabled = true; renderCourses();
+  syncing = true; setSyncButton(true, 'Analysing courses…'); renderCourses();
   const unsubscribe = planner.subscribe(event => { if (event.type === 'progress') toast(`${event.stage === 'fetching' ? 'Saving' : 'Analysing'} ${event.course.shortname || event.course.name} (${event.index}/${event.total})…`, true); });
   try {
     const fetched = await planner.fetchSelectedCourses();
@@ -252,7 +278,7 @@ async function buildCoursePlan() {
     const errors = [...fetched.errors, ...analysed.errors];
     toast(errors.length ? `Course content saved. ${errors.map(error => error.message).join(' ')}` : state.planning.warning || 'Study tasks extracted and your calendar updated.', true);
   } catch (error) { state = await planner.getWorkspace(); render(); toast(error.message, true); }
-  finally { unsubscribe(); syncing = false; $('#sync-button').disabled = false; renderCourses(); }
+  finally { unsubscribe(); syncing = false; setSyncButton(false); renderCourses(); }
 }
 function showCalendarResult(meta = null) {
   const connected = Boolean(state.calendarSyncedAt);
@@ -365,10 +391,8 @@ async function init() {
       $(`#calendar-agenda [data-agenda-day="${agendaDay}"]`).focus({ preventScroll: true });
     }
     if (e.target.closest('[data-add-task]')) openTask();
-    if (e.target.closest('[data-sync-moodle]')) await syncMoodle();
   });
   $('#generate-button').addEventListener('click', async () => { const button = $('#generate-button'); button.disabled = true; try { await persist(); state = await planner.createPlan(); render(); toast(state.planning.warning || 'Your plan has been updated.', true); } catch (error) { toast(error.message, true); } finally { button.disabled = false; } });
-  $('#sync-button').addEventListener('click', syncMoodle);
   $('#settings-form').addEventListener('submit', async e => {
     e.preventDefault();
     const config = { ...state.settings, startHour: Number($('#start-hour').value), endHour: Number($('#end-hour').value), blockMinutes: Number($('#block-minutes').value), breakMinutes: Number($('#break-minutes').value), weekends: $('#weekends').checked };
@@ -425,7 +449,17 @@ async function init() {
   $('#delete-task-button').addEventListener('click', async () => { const id = $('#task-id').value; state.tasks = state.tasks.filter(t => t.id !== id); delete state.preferences[id]; await changeAndRender(); $('#task-dialog').close(); toast('Task removed from your workspace.'); });
   $('#chat-form').addEventListener('submit', async e => { e.preventDefault(); const text = $('#chat-input').value.trim(); if (!text) return; $('#chat-input').value = ''; await submitChat(text); });
   $$('[data-suggestion]').forEach(b => b.addEventListener('click', () => { $('#chat-input').value = b.dataset.suggestion; $('#chat-input').focus(); }));
+  setSyncButton(syncing, syncing ? 'Syncing…' : 'Sync Moodle');
+  console.info('[Study Space][UI] Dashboard ready', { buildId: BUILD_ID, extension: isExtension });
   // Refresh the current-time marker without rescheduling an existing plan.
   setInterval(() => { if (document.visibilityState === 'visible' && currentView === 'week') updateNowMarker(); }, 60000);
 }
-init().catch(() => { document.body.innerHTML = '<main style="margin:40px"><h1>Let’s make a fresh start.</h1><p>The workspace could not load. Reload the extension and try again.</p></main>'; });
+// Delegate the sync click before async workspace initialization. This also
+// survives a redesigned header replacing its button after rendering.
+document.addEventListener('click', event => {
+  if (!event.target.closest('#sync-button, [data-sync-moodle]')) return;
+  event.preventDefault();
+  void syncMoodle();
+});
+console.info('[Study Space][UI] Moodle click handler registered', { buildId: BUILD_ID });
+init().catch(error => { console.error('[Study Space][UI] Dashboard initialization failed', error.message); document.body.innerHTML = '<main style="margin:40px"><h1>Let’s make a fresh start.</h1><p>The workspace could not load. Reload the extension and try again.</p></main>'; });

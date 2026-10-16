@@ -20,6 +20,12 @@ After code changes, run `npm run build`, click **Reload** on the extension card,
 
 For a browser preview: `npm run build && npm run dev`, then open http://127.0.0.1:4173. The preview supports sample data, manual tasks, ICS file imports, and scheduling. Live Moodle/timetable URL sync requires the loaded extension.
 
+## Direct Moodle check
+
+Version 1.2.2 adds **Get Moodle courses** beside **Sync Moodle**. This has its own script and calls `core_course_get_enrolled_courses_by_timeline_classification` directly, independently of dashboard initialization, planner queues and Gemini. It displays returned course names/IDs and logs the response. Sign in to Moodle in another tab first. This diagnostic does not modify the workspace or call AI.
+
+Sample workspaces never call Gemini, including plan regeneration and free-form chat. Connect real data before starting AI analysis. After building or pulling updates, reload Study Space in `chrome://extensions`, then refresh the open extension tab. Confirm version 1.2.2 and the new button; an already-open tab keeps its old JavaScript until refreshed.
+
 ## Check connections before running AI
 
 1. Open **Set up your workspace** (or the extension’s `setup.html`).

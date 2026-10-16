@@ -6,13 +6,16 @@ export function createMoodleConnection(browser = globalThis.chrome) {
   async function read(options) {
     const tabs = await browser.tabs.query({ url: 'https://moodle.ucl.ac.uk/*' });
     if (!tabs.length) throw new Error('Open Moodle in another tab and sign in, then try again.');
+    let lastError;
     for (const tab of tabs.sort((a, b) => Number(b.active) - Number(a.active))) {
       try {
         const [{ result }] = await browser.scripting.executeScript({ target: { tabId: tab.id }, world: 'MAIN', func: readMoodleInPage, args: [options] });
         if (result?.ok) return result;
-      } catch { /* Try another authenticated tab. */ }
+        if (result?.error) lastError = result.error;
+        console.warn('[Study Space][Moodle] Tab read failed', { tabId: tab.id, reason: result?.error || 'No script result' });
+      } catch { lastError = 'Chrome could not run the Moodle reader. Allow Moodle site access for the extension, refresh Moodle and try again.'; console.warn('[Study Space][Moodle] Injection failed', { tabId: tab.id }); }
     }
-    throw new Error('Could not read Moodle. Refresh your signed-in Moodle tab and try again.');
+    throw new Error(lastError || 'Could not read Moodle. Refresh your signed-in Moodle tab and try again.');
   }
   return {
     read,

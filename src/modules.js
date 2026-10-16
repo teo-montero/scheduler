@@ -9,3 +9,7 @@ export function consideredTasks(workspace) {
 export function schedulableTasks(workspace) {
   return consideredTasks(workspace).filter(task => task.includeInPlan !== false && !task.needsEstimate);
 }
+
+export function hasSampleData(workspace) {
+  return workspace.mode === 'demo' || workspace.tasks.some(task => task.source === 'demo' || String(task.id).startsWith('demo-')) || workspace.events.some(event => String(event.id).startsWith('demo-'));
+}

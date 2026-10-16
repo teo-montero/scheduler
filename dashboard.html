@@ -56,8 +56,9 @@
       <div class="page-content">
         <section class="page-heading" aria-labelledby="page-title">
           <div><h1 id="page-title" tabindex="-1">My week</h1><p id="page-description">Your timetable, focus sessions and time for yourself.</p></div>
-          <div class="heading-actions"><button id="sync-button" class="button secondary"><svg aria-hidden="true"><use href="#i-sync"/></svg><span>Sync Moodle</span></button><button id="add-task-button" class="button primary"><svg aria-hidden="true"><use href="#i-plus"/></svg>Add task</button></div>
+          <div class="heading-actions"><button type="button" id="get-moodle-courses" class="button secondary">Get Moodle courses</button><button type="button" id="sync-button" class="button secondary"><svg aria-hidden="true"><use href="#i-sync"/></svg><span>Sync Moodle</span></button><button id="add-task-button" class="button primary"><svg aria-hidden="true"><use href="#i-plus"/></svg>Add task</button></div>
         </section>
+        <p id="moodle-direct-status" class="field-help" role="status" aria-live="polite" hidden></p><div id="moodle-direct-results"></div>
         <div id="sample-banner" class="sample-banner">
           <span><span class="sample-tag">Preview</span>You’re exploring a sample week.</span>
           <a id="start-button" href="setup.html">Set up your workspace <svg aria-hidden="true"><use href="#i-arrow"/></svg></a>
@@ -104,6 +105,7 @@
   <dialog id="task-dialog" class="modal task-modal" aria-labelledby="task-dialog-title"><form id="task-form"><div class="modal-header"><div><h2 id="task-dialog-title">Add task</h2><p class="modal-description">Turn your next deadline into a plan.</p></div><button type="button" class="icon-button close-dialog" aria-label="Close task"><svg><use href="#i-x"/></svg></button></div><div class="modal-body"><input type="hidden" id="task-id"><label for="task-title">What are you working on?</label><input id="task-title" required maxlength="180" placeholder="e.g. Finish the maths problem sheet"><label for="task-course">Module</label><select id="task-course"></select><div class="form-grid"><label>Deadline (London time)<input type="datetime-local" id="task-due"></label><label>Estimated work (minutes)<input type="number" id="task-estimate" min="15" max="6000" step="5" value="120" required></label></div><p class="field-help">The planner splits your estimate into focus sessions before the deadline.</p><p id="task-source-note" class="field-help" hidden>Title, module and deadline come from Moodle and update when you sync. You can adjust the work estimate here.</p><p id="task-error" class="form-error" role="alert"></p></div><div class="modal-footer"><button id="delete-task-button" type="button" class="text-button danger" hidden>Delete task</button><button type="button" class="button secondary close-dialog">Cancel</button><button type="submit" class="button primary">Save task</button></div></form></dialog>
   <dialog id="event-dialog" class="modal event-modal" aria-labelledby="event-title"><div class="modal-header"><button class="icon-button close-dialog" aria-label="Close event"><svg><use href="#i-x"/></svg></button></div><div id="event-detail" class="modal-body"></div><div class="modal-footer"><button class="button secondary close-dialog">Done</button></div></dialog>
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <script type="module" src="moodle-check.js"></script>
   <script type="module" src="dashboard.js"></script>
 </body>
 </html>
