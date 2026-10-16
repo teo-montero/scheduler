@@ -24,6 +24,8 @@ For a browser preview: `npm run build && npm run dev`, then open http://127.0.0.
 
 **Moodle:** Open https://moodle.ucl.ac.uk/my/ in another tab and sign in. In the planner, click **Sync Moodle**. The extension reads the current `window.M.cfg.sesskey` in that tab’s MAIN world and calls Moodle’s same-origin AJAX API. It pages through enrolled courses and calendar action events. If deadlines fail but courses succeed, it keeps previous deadlines and displays a warning.
 
+**Calendar editing preview:** Click once to select an event. Drag its body to move it or its top/bottom edge to resize it in 30-minute steps; nearby events move to avoid overlaps. Earlier/Later and −30m/+30m controls work on mobile too. The upper-left cross removes only that event from the preview. Double-click or choose Details for information. With a selected event focused, use arrow keys to move, Shift + arrow keys to change duration, Enter for details, Delete to remove, and Escape to finish. All-day entries support details and preview removal. Reset preview or reload restores the saved calendar; these edits never change tasks, integrations or saved schedules.
+
 **Timetable:** Open **Preferences** or **Manage connections**. Paste your UCL timetable iCalendar subscription URL and click **Sync timetable**. The legacy `https://timetable.apps.ucl.ac.uk/icalendar/…` subscription is resolved directly to UCL’s `https://timetable.mesh.ucl.ac.uk/online-timetable-api-proxy/v0.1/icalendar?key_identifier=…` API, avoiding its HTTP 307 redirect. You can paste either URL. Only these UCL timetable hosts and recognised paths are allowed. The button shows download progress, then a preview of your next classes and **View my calendar**. If Chrome has withheld timetable site access, it requests the necessary UCL host permissions. Saving preferences with a new subscription URL also downloads it immediately. Alternatively, import an `.ics` file. Timetable imports expand recurring events for the next 120 days, with a one-week lookback. Refresh the feed periodically using **Sync timetable**.
 
 The first successful real integration replaces the sample workspace. Real feeds are never mixed with sample classes or assignments. Importing a timetable does not automatically sync Moodle; connect both feeds. Syncing and file importing save immediately. The preferences form’s Cancel button dismisses unsaved study-hour/URL edits. Failed downloads retain the previous calendar and display an error beside the subscription controls.
@@ -38,18 +40,40 @@ The first successful real integration replaces the sample workspace. Real feeds 
 - Existing saved plans stay in place when reopening the dashboard. Regenerate to update them for the current time.
 - Initial sample plans illustrate a complete week, including earlier days; any edits/regeneration use the actual current time.
 
-The command box supports a small, explicit grammar, processed on this device:
+## Study assistant (OpenAI)
 
-- `I’m busy Wednesday afternoon` → blocks 12:00–18:00 and replans.
-- `I’m busy tomorrow 14:00–17:00` → blocks that time.
-- `Finished maths problem sheet` → completes the matching task and replans.
-- `Move maths problem sheet to Friday` → constrains its work to that day and reports any time that will not fit.
+Requires Node.js 22+ and a local server for both the preview and extension. No API key is sent to the browser or bundled into the extension.
 
-Day names mean the next matching day, including today. Morning is 08:00–12:00, afternoon 12:00–18:00, evening 17:00–23:00. Use “all day” or a 24-hour range for other times. Ambiguous task matches request a more specific title. To clear a task’s day preference, save it in the task editor. Remove personal-time blocks in Preferences or by clicking them on the calendar. These blocks move study sessions; they do not change your university timetable.
+1. Put your OpenAI API key in the existing ignored `.env.local`: `OPENAI_API_KEY=your-key`. On a fresh clone, copy `.env.example` to `.env.local` first.
+2. Run `npm run build`, then `npm run dev`. Restart the server after changing the key. The default model is `gpt-4.1-mini`; `OPENAI_MODEL` can override it with a model supporting strict Structured Outputs.
+3. Open the preview at http://127.0.0.1:4173 or reload the unpacked extension and its dashboard. The extension must have localhost site access and the local server must stay running.
+4. Open Study assistant and ask, for example: “Add an algorithms lecture tomorrow 10:00–11:00 in Roberts G06”, “Schedule revision tomorrow from 14:00 to 15:00”, or “Añade gimnasio mañana de 18:00 a 19:00”.
+
+OpenAI receives the last 12 chat messages, the viewed week, today's London date/time and up to 500 upcoming fixed commitments (title/start/end). It does not receive the Moodle session, calendar subscription URL, API key in the prompt, or credentials file. Responses use `store: false`. This does not override OpenAI's API data retention policies.
+
+The server calls the Responses API with a strict JSON schema. Missing information triggers a clarification; finite weekly requests expand into at most 24 events after specifying an end date/count. Each event has `type` (`lecture`, `study`, `user_time`), `title`, `description`, `date`, `startTime`, `endDate`, `endTime`, and `location`. Dates and times are London wall times. The frontend validates the entire response again, converts to ISO timestamps, assigns local IDs and colours by type:
+
+```json
+{
+  "id": "assistant-generated-uuid",
+  "type": "study",
+  "title": "Algorithms revision",
+  "description": "Review sorting exercises",
+  "start": "2026-11-02T14:00:00.000Z",
+  "end": "2026-11-02T15:00:00.000Z",
+  "timeZone": "Europe/London",
+  "location": "Library",
+  "source": "assistant"
+}
+```
+
+Lecture uses the timetable colour, study uses the study colour, and user_time uses the personal-time colour. All three retain their details on reload. Assistant-created events are fixed commitments in the existing `workspace.blocked` collection; they survive timetable sync and automatically reserve time from the task scheduler. They are not exported to UCL, Moodle or an external calendar. New events jump into view. Conflicts reject the whole batch, duplicates are skipped, and malformed JSON/API failures never add events. Times in the missing/repeated daylight-saving hour are rejected rather than guessed. Use Preferences or the event's Details → Remove event to remove a saved assistant event; the timetable cross/drag/resize still affect only the temporary UI preview.
+
+The established “Finished maths problem sheet” and “Move maths problem sheet to Friday” shortcuts still run locally. Natural-language event creation uses OpenAI. If the key/server is missing the chat displays an actionable error. No live API call is needed to run tests: automated coverage uses synthetic Responses API replies and checks all three event types, persistence, clarifications, conflicts and failures.
 
 ## Data and scope
 
-- Uses `chrome.storage.local` restricted to trusted extension contexts. No analytics, remote scripts, remote fonts, or data uploads.
+- Uses `chrome.storage.local` restricted to trusted extension contexts. No analytics, remote scripts or remote fonts. Assistant requests send the limited context described above to OpenAI.
 - Never reads or saves session cookies. The session key stays inside the Moodle page’s sync function and is not returned or persisted.
 - The private calendar URL is saved locally in the extension only. Never paste it into source files or commit it. Clearing saved data removes it.
 - The previous starter files contained a hardcoded session key and private calendar URL; both were removed.

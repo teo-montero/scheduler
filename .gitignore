@@ -3,6 +3,7 @@ dist/
 .DS_Store
 *.log
 .env*
+!.env.example
 playwright-report/
 test-results/
 /dashboard.js
@@ -23,3 +24,6 @@ test-results/
 .impeccable/review/
 
 /setup.js
+
+# Local credentials
+/credentials.json

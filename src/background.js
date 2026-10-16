@@ -1,3 +1,4 @@
+import { fetchAssistant } from './assistant-client.js';
 import { BUILD_ID, TIMETABLE_ORIGINS } from './protocol.js';
 import { readMoodleInPage } from './moodle.js';
 import { parseTimetable, validateCalendarUrl, calendarFetchUrl } from './ical.js';
@@ -13,6 +14,7 @@ chrome.runtime.onMessage.addListener((message, sender, reply) => {
   if (sender.id !== chrome.runtime.id || !sender.url?.startsWith(chrome.runtime.getURL('dashboard.html'))) return false;
   const handle = async () => {
     if (message.buildId && message.buildId !== BUILD_ID) throw new Error('Study Space was updated. Refresh this planner tab, then try again.');
+    if (message.type === 'ASSISTANT_CHAT') return fetchAssistant(message.payload);
     if (message.type === 'SYNC_MOODLE') {
       const tabs = await chrome.tabs.query({ url: 'https://moodle.ucl.ac.uk/*' });
       if (!tabs.length) throw new Error('Open Moodle in another tab and sign in, then click Sync Moodle again.');

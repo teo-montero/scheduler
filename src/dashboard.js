@@ -1,3 +1,6 @@
+import { prepareAssistantEvents, calendarEventType, calendarEventClass } from './assistant-events.js';
+import { fetchAssistant } from './assistant-client.js';
+import { createCalendarPreview } from './calendar-preview.js';
 import { BUILD_ID, TIMETABLE_ORIGINS } from './protocol.js';
 import { addDays, atTime, dateKey, dateParts, weekStart, minutesOfDay, formatTime, formatDate, durationLabel } from './dates.js';
 import { scheduleTasks } from './scheduler.js';
@@ -18,7 +21,20 @@ const VIEWS = {
   tasks: { title: 'All tasks', description: 'Review deadlines, adjust estimates and keep track of your progress.' },
   courses: { title: 'My modules', description: 'Your courses and their tasks in one place.' }
 };
-let state, currentWeek = weekStart(), currentView = 'week', selectedCourse = null, agendaDay = null, toastTimer, syncing = false, calendarSyncing = false;
+let state, currentWeek = weekStart(), currentView = 'week', selectedCourse = null, agendaDay = null, toastTimer, syncing = false, calendarSyncing = false, chatBusy = false;
+const calendarPreview = createCalendarPreview({
+  getEvents: () => [...(state?.events || []), ...(state?.blocks || []), ...(state?.blocked || [])],
+  refresh: renderPreviewCalendar, openInfo: openEvent, announce: toast
+});
+function renderPreviewCalendar() {
+  const events = calendarPreview.project(weekEvents());
+  renderCalendar(events); renderAgenda(events); calendarPreview.sync();
+}
+function calendarHours(events = calendarPreview.project(weekEvents())) {
+  const timed = events.filter(event => !event.allDay);
+  return [Math.min(8, state.settings.startHour, ...timed.map(event => Math.floor(minutesOfDay(event.start) / 60))),
+    Math.max(19, state.settings.endHour, ...timed.map(event => dateKey(event.end) !== dateKey(event.start) ? 24 : Math.ceil(minutesOfDay(event.end) / 60)))];
+}
 function courseColor(id) { const index = state.courses.findIndex(c => String(c.id) === String(id)); return COLORS[Math.max(0, index) % COLORS.length]; }
 function emptyMarkup(name, title, description, action = '') {
   return `<div class="empty-state">${icon(name)}<strong class="empty-state-title">${escape(title)}</strong><p class="empty-state-copy">${escape(description)}</p>${action}</div>`;
@@ -57,35 +73,22 @@ function taskMarkup(task) {
 function render() {
   renderViewHeader();
   $('#today-label').textContent = new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/London', weekday: 'long', day: 'numeric', month: 'long' }).format(new Date());
-  $('#sample-banner').hidden = state.mode !== 'demo';
   $('#mode-badge').innerHTML = `<span></span>${state.mode === 'demo' ? 'Sample workspace' : 'Your workspace'}`;
   $('#mode-badge').classList.toggle('connected', state.mode !== 'demo');
   $('#profile-mode').textContent = state.mode === 'demo' ? 'Demo workspace' : 'Saved on this device';
-  const pending = state.tasks.filter(t => !t.completed), done = state.tasks.filter(t => t.completed).length;
+  const pending = state.tasks.filter(t => !t.completed);
   $('#nav-task-count').textContent = pending.length;
   $('#module-count').textContent = state.courses.length.toString().padStart(2, '0');
   $('#sidebar-courses').innerHTML = state.courses.length ? state.courses.slice(0, 8).map(c => `<button class="sidebar-course ${String(selectedCourse) === String(c.id) ? 'selected' : ''}" data-course="${escape(c.id)}"><span class="course-dot" style="--course-color:${courseColor(c.id)}"></span><span>${escape(c.shortname || c.name)}<small>${escape(c.name)}</small></span></button>`).join('') : '<p class="sidebar-empty">Connect Moodle to see your modules.</p>';
-  const events = weekEvents();
-  const focusMinutes = events.filter(e => e.source === 'study').reduce((sum, e) => sum + (new Date(e.end) - new Date(e.start)) / 60000, 0);
-  $('#stat-focus').innerHTML = `${durationLabel(focusMinutes)} <span>planned</span>`;
-  const sessions = events.filter(e => e.source === 'study').length;
-  $('#stat-focus-detail').textContent = `${sessions} study ${sessions === 1 ? 'session' : 'sessions'} this week`;
-  $('#stat-tasks').innerHTML = `${pending.length} <span>${pending.length === 1 ? 'task' : 'tasks'} to go</span>`;
-  $('#stat-tasks-detail').textContent = `${done} ${done === 1 ? 'task' : 'tasks'} completed`;
-  $('#stat-health').textContent = state.unscheduled.length ? 'Needs attention' : pending.length ? 'All work planned' : state.tasks.length ? 'All tasks complete' : 'No tasks yet';
-  $('#stat-health-detail').textContent = state.unscheduled.length ? `${state.unscheduled.length} ${state.unscheduled.length === 1 ? 'task needs' : 'tasks need'} more time` : `${state.settings.breakMinutes}-minute breaks between sessions`;
-  $('#stat-health').classList.toggle('plan-warning', state.unscheduled.length > 0);
   $('#plan-caption').textContent = state.mode === 'demo' ? 'Sample plan · connect your timetable and Moodle.' : state.unscheduled.length ? `${state.unscheduled.length} task${state.unscheduled.length === 1 ? '' : 's'} need more time before the deadline.` : 'Plan includes your commitments and study breaks.';
   $('#plan-caption').classList.toggle('plan-warning', state.unscheduled.length > 0);
-  renderCalendar(events);
-  renderAgenda(events);
-  $('#upcoming-tasks').innerHTML = sortedTasks(pending).slice(0, 4).map(taskMarkup).join('') || emptyMarkup('check', state.tasks.length ? 'All tasks complete' : 'No tasks yet', state.tasks.length ? 'New deadlines will appear here.' : 'Add a task or connect Moodle to start planning.', addTaskAction());
+  renderPreviewCalendar();
   renderTasks(); renderCourses(); renderChat();
 }
 function renderCalendar(events) {
   $('#week-range').textContent = `${formatDate(atTime(currentWeek), { month: 'long' })} – ${formatDate(atTime(addDays(currentWeek, 6)), { month: 'long', year: 'numeric' })}`;
   const days = Array.from({ length: 7 }, (_, i) => addDays(currentWeek, i));
-  const startHour = Math.min(8, state.settings.startHour), endHour = Math.max(19, state.settings.endHour);
+  const [startHour, endHour] = calendarHours();
   const height = (endHour - startHour) * CALENDAR_HOUR_HEIGHT;
   $('#calendar-head').innerHTML = `<div>GMT/BST</div>${days.map(key => `<div class="${key === dateKey() ? 'is-today' : ''}"><span class="day-name">${formatDate(atTime(key), { weekday: 'short' }).split(',')[0].split(' ')[0]}</span><span class="day-number">${Number(key.slice(-2))}</span></div>`).join('')}`;
   const axis = `<div class="time-axis">${Array.from({ length: endHour - startHour }, (_, i) => `<span class="time-label" style="top:${i * CALENDAR_HOUR_HEIGHT}px">${String(startHour + i).padStart(2, '0')}:00</span>`).join('')}</div>`;
@@ -102,10 +105,10 @@ function renderCalendar(events) {
     for (const item of items) { if (item.top >= groupEnd && group.length) { assignGroup(); group = []; groupEnd = -1; } group.push(item); groupEnd = Math.max(groupEnd, item.bottom); }
     assignGroup();
     const markup = items.map(e => {
-      const h = Math.max(14, e.bottom - e.top - 3), cls = e.source === 'study' ? 'study' : e.source === 'personal' ? 'personal' : 'lecture';
+      const h = Math.max(14, e.bottom - e.top - 3), cls = calendarEventClass(e);
       const time = e.allDay ? 'All day' : `${formatTime(e.start)}–${formatTime(e.end)}`;
-      const location = e.source === 'study' ? `Focus · ${e.courseName || 'Personal'}` : e.location;
-      return `<button class="calendar-event ${cls} ${h < 56 ? 'short' : ''}" data-event="${escape(e.id)}" style="top:${e.top}px;height:${h}px;left:calc(${e.lane / e.lanes * 100}% + 3px);width:calc(${100 / e.lanes}% - 6px)" title="${escape(`${time} · ${e.title}${location ? ` · ${location}` : ''}`)}" aria-label="${escape(`${e.title}, ${time}`)}"><span class="event-time">${time}</span><strong>${escape(e.title)}</strong>${location && h >= 76 ? `<span class="event-location">${escape(location)}</span>` : ''}</button>`;
+      const location = calendarEventType(e) === 'study' ? [e.courseName || 'Focus', e.location].filter(Boolean).join(' · ') : e.location;
+      return `<button class="calendar-event ${cls} ${h < 56 ? 'short' : ''}" data-event="${escape(e.id)}" data-event-type="${calendarEventType(e)}" style="top:${e.top}px;height:${h}px;left:calc(${e.lane / e.lanes * 100}% + 3px);width:calc(${100 / e.lanes}% - 6px)" title="${escape(`${time} · ${e.title}${location ? ` · ${location}` : ''}`)}" aria-label="${escape(`${e.title}, ${time}`)}"><span class="event-time">${time}</span><strong>${escape(e.title)}</strong>${location && h >= 76 ? `<span class="event-location">${escape(location)}</span>` : ''}</button>`;
     }).join('');
     const minute = minutesOfDay(new Date()) - startHour * 60;
     const now = key === dateKey() && minute >= 0 && minute * CALENDAR_MINUTE_HEIGHT < height ? `<div class="now-line" style="top:${minute * CALENDAR_MINUTE_HEIGHT}px"></div>` : '';
@@ -114,7 +117,7 @@ function renderCalendar(events) {
   $('#calendar-body').style.height = `${height}px`; $('#calendar-body').innerHTML = axis + columns;
 }
 function updateNowMarker() {
-  const startHour = Math.min(8, state.settings.startHour), endHour = Math.max(19, state.settings.endHour);
+  const [startHour, endHour] = calendarHours();
   const minute = minutesOfDay(new Date()) - startHour * 60;
   const column = $(`#calendar-body .day-column[data-date="${dateKey()}"]`);
   let marker = $('#calendar-body .now-line');
@@ -131,11 +134,11 @@ function renderAgenda(events) {
     .sort((a, b) => Number(Boolean(b.allDay)) - Number(Boolean(a.allDay)) || new Date(a.start) - new Date(b.start));
   const dayButtons = days.map(key => `<button type="button" class="agenda-day ${key === agendaDay ? 'active' : ''}" data-agenda-day="${key}" aria-pressed="${key === agendaDay}" aria-label="${escape(formatDate(atTime(key), { weekday: 'long', month: 'long' }))}"${key === dateKey() ? ' aria-current="date"' : ''}><span>${new Intl.DateTimeFormat('en-GB', { timeZone: 'Europe/London', weekday: 'short' }).format(atTime(key))}</span><strong>${Number(key.slice(-2))}</strong></button>`).join('');
   const markup = items.map(event => {
-    const kind = event.source === 'study' ? 'study' : event.source === 'personal' ? 'personal' : 'lecture';
+    const kind = calendarEventClass(event);
     const label = kind === 'study' ? 'Study session' : kind === 'personal' ? 'Personal time' : 'Timetable';
     const time = event.allDay ? 'All day' : `${new Date(event.start).getTime() < dayStart ? '00:00' : formatTime(event.start)}–${new Date(event.end).getTime() >= dayEnd ? '24:00' : formatTime(event.end)}`;
-    const detail = kind === 'study' ? event.courseName : event.location;
-    return `<button type="button" class="agenda-event ${kind}" data-event="${escape(event.id)}" aria-label="${escape(`${event.title}, ${time}, ${label}`)}"><span class="agenda-event-time">${escape(time)}</span><span class="agenda-event-info"><strong>${escape(event.title)}</strong><span class="agenda-event-meta">${escape(label)}${detail ? ` · ${escape(detail)}` : ''}</span></span>${icon('chevron')}</button>`;
+    const detail = [kind === 'study' ? event.courseName : '', event.location].filter(Boolean).join(' · ');
+    return `<button type="button" class="agenda-event ${kind}" data-event="${escape(event.id)}" data-event-type="${calendarEventType(event)}" aria-label="${escape(`${event.title}, ${time}, ${label}`)}"><span class="agenda-event-time">${escape(time)}</span><span class="agenda-event-info"><strong>${escape(event.title)}</strong><span class="agenda-event-meta">${escape(label)}${detail ? ` · ${escape(detail)}` : ''}</span></span>${icon('chevron')}</button>`;
   }).join('');
   $('#calendar-agenda').innerHTML = `<div class="agenda-days" role="group" aria-label="Select a day">${dayButtons}</div><h3 class="agenda-date" id="agenda-date">${escape(formatDate(atTime(agendaDay), { weekday: 'long', month: 'long' }))}</h3><div class="agenda-events" role="group" aria-labelledby="agenda-date">${markup || `<div class="agenda-empty">${emptyMarkup('calendar', 'No sessions scheduled', 'Choose another day or add a task to your plan.', addTaskAction())}</div>`}</div>`;
 }
@@ -155,6 +158,11 @@ function renderCourses() {
   }).join('') || emptyMarkup('book', 'Your modules will appear here', 'Connect Moodle to import your courses and deadlines.', syncMoodleAction());
 }
 function renderChat() {
+  $('#chat-input').disabled = chatBusy;
+  $('#chat-form button[type="submit"]').disabled = chatBusy;
+  $('#chat-form').setAttribute('aria-busy', String(chatBusy));
+  $('#chat-status').textContent = chatBusy ? 'Thinking…' : '';
+  $$('[data-suggestion]').forEach(button => { button.disabled = chatBusy; });
   $('#chat-messages').innerHTML = state.messages.slice(-12).map(m => `<div class="chat-message ${m.role === 'user' ? 'user' : ''}">${escape(m.text)}</div>`).join('');
   $('#chat-messages').scrollTop = $('#chat-messages').scrollHeight;
 }
@@ -164,7 +172,6 @@ function renderViewHeader() {
   $('#page-title').textContent = content.title;
   $('#page-description').textContent = content.description;
   $('#breadcrumb-view').textContent = content.title;
-  $('#focus-summary').hidden = currentView !== 'week';
   $$('.nav-item[data-view]').forEach(button => {
     const active = button.dataset.view === currentView;
     button.classList.toggle('active', active);
@@ -189,12 +196,23 @@ function openSettings() {
 function renderBlocked() {
   $('#blocked-list').innerHTML = state.blocked.length ? [...state.blocked].sort((a, b) => new Date(a.start) - new Date(b.start)).map(e => `<div class="blocked-row"><div>${escape(e.title)}<small>${formatDate(e.start, { weekday: 'short' })} · ${formatTime(e.start)}–${formatTime(e.end)}</small></div><button type="button" class="icon-button" data-remove-block="${escape(e.id)}" aria-label="Remove ${escape(e.title)}">${icon('x')}</button></div>`).join('') : '<p class="field-help">Ask your planner to block time, e.g. “I’m busy Wednesday afternoon”.</p>';
 }
+// Presentation only: recurrence has no persistence or scheduling implementation.
+function updateRepeatPreview() {
+  const weekly = $('#task-repeat').checked;
+  $('#task-repeat-help').hidden = !weekly;
+  $('#task-deadline-label').textContent = weekly ? 'First deadline (London time)' : 'Deadline (London time)';
+  $('#task-save-button').disabled = weekly;
+  $('#task-save-button').textContent = weekly ? 'Save weekly task' : 'Save task';
+}
 function openTask(task = null) {
   $('#task-form').reset(); $('#task-error').textContent = '';
   $('#task-course').innerHTML = '<option value="0">Personal / independent study</option>' + state.courses.map(c => `<option value="${escape(c.id)}">${escape(c.shortname || c.name)}</option>`).join('');
   $('#task-id').value = task?.id || ''; $('#task-title').value = task?.title || ''; $('#task-course').value = task?.courseId || '0'; $('#task-estimate').value = task?.estimatedMinutes || 120;
   if (task?.dueDate) { const p = dateParts(task.dueDate); $('#task-due').value = `${dateKey(task.dueDate)}T${String(p.hour).padStart(2, '0')}:${String(p.minute).padStart(2, '0')}`; }
   const fromMoodle = task?.source === 'moodle';
+  $('#task-repeat-row').hidden = Boolean(fromMoodle);
+  $('#task-repeat').disabled = Boolean(fromMoodle);
+  updateRepeatPreview();
   ['task-title', 'task-course', 'task-due'].forEach(id => { $(`#${id}`).disabled = Boolean(fromMoodle); });
   $('#task-source-note').hidden = !fromMoodle;
   $('#delete-task-button').hidden = !task || fromMoodle;
@@ -203,11 +221,22 @@ function openTask(task = null) {
 }
 function safeMoodleUrl(value) { try { const url = new URL(value); return url.protocol === 'https:' && url.hostname === 'moodle.ucl.ac.uk' ? url.href : null; } catch { return null; } }
 function openEvent(id) {
-  const event = [...state.events, ...state.blocks, ...state.blocked].find(e => e.id === id);
+  const event = calendarPreview.project([...state.events, ...state.blocks, ...state.blocked]).find(e => e.id === id);
   if (!event) return;
   const task = state.tasks.find(t => t.id === event.taskId), url = safeMoodleUrl(task?.url);
-  $('#event-detail').innerHTML = `<h2 id="event-title">${escape(event.title)}</h2><p>${event.source === 'study' ? 'Study session' : event.source === 'personal' ? 'Personal time' : 'UCL timetable'} · ${formatDate(event.start, { weekday: 'long' })}<br>${event.allDay ? 'All day' : `${formatTime(event.start)} – ${formatTime(event.end)}`} · London time${event.location ? `<br>${escape(event.location)}` : ''}</p>${task ? `<p class="event-detail-note">Part of ${durationLabel(task.estimatedMinutes)} of planned work${task.dueDate ? ` · due ${formatDate(task.dueDate)}, ${formatTime(task.dueDate)}` : ''}. Complete the task when all its work is done.</p><button class="button primary" data-complete="${escape(task.id)}">${icon('check')}Mark task complete</button> <button class="button secondary" data-edit-task="${escape(task.id)}">Edit task</button>${url ? `<p><a class="text-link" href="${escape(url)}" target="_blank" rel="noopener noreferrer">Open in Moodle ${icon('external')}</a></p>` : ''}` : event.source === 'personal' ? `<button class="button secondary" data-remove-block="${escape(event.id)}">Remove personal time</button>` : ''}`;
+  $('#event-detail').innerHTML = `<h2 id="event-title">${escape(event.title)}</h2><p>${calendarEventType(event) === 'study' ? 'Study session' : calendarEventType(event) === 'user_time' ? 'Personal time' : 'Lecture'} · ${formatDate(event.start, { weekday: 'long' })}<br>${event.allDay ? 'All day' : `${formatTime(event.start)} – ${formatTime(event.end)}`} · London time${event.location ? `<br>${escape(event.location)}` : ''}</p>${event.description ? `<p class="event-detail-note">${escape(event.description)}</p>` : ''}${task ? `<p class="event-detail-note">Part of ${durationLabel(task.estimatedMinutes)} of planned work${task.dueDate ? ` · due ${formatDate(task.dueDate)}, ${formatTime(task.dueDate)}` : ''}. Complete the task when all its work is done.</p><button class="button primary" data-complete="${escape(task.id)}">${icon('check')}Mark task complete</button> <button class="button secondary" data-edit-task="${escape(task.id)}">Edit task</button>${url ? `<p><a class="text-link" href="${escape(url)}" target="_blank" rel="noopener noreferrer">Open in Moodle ${icon('external')}</a></p>` : ''}` : ['personal', 'assistant'].includes(event.source) ? `<button class="button secondary" data-remove-block="${escape(event.id)}">Remove event</button>` : ''}`;
   $('#event-dialog').showModal();
+}
+// Existing task-list deletion; calendar preview removal never calls this action.
+async function deleteTask(id, dialog) {
+  const task = state.tasks.find(t => t.id === id);
+  if (!task || task.source === 'moodle') return;
+  state.tasks = state.tasks.filter(t => t.id !== id);
+  delete state.preferences[id];
+  await changeAndRender();
+  dialog.close();
+  if (document.body.dataset.input === 'keyboard') $('#page-title').focus({ preventScroll: true });
+  toast('Task removed from your workspace.');
 }
 async function extensionRequest(message) {
   if (!isExtension) throw new Error('Live sync works in the Chrome extension. Run npm run build, load the dist folder in chrome://extensions, then open Study Space from the toolbar.');
@@ -287,6 +316,40 @@ async function syncTimetableFromForm() {
   }
 }
 async function submitChat(text) {
+  if (chatBusy) return;
+  // Keep the established local task completion/move shortcuts.
+  if (/^(finished|completed|done|move|reschedule)\b/i.test(text)) return submitLocalCommand(text);
+  chatBusy = true;
+  state.messages.push({ role: 'user', text });
+  renderChat();
+  const workspace = state;
+  let response;
+  try {
+    const payload = {
+      messages: state.messages.slice(-12).map(({ role, text }) => ({ role, text: text.slice(0, 2000) })),
+      selectedWeek: currentWeek,
+      calendar: [...state.events, ...state.blocked].filter(event => new Date(event.end) >= new Date()).sort((a, b) => new Date(a.start) - new Date(b.start)).slice(0, 500).map(({ title, start, end }) => ({ title: title.slice(0, 200), start, end }))
+    };
+    const { result } = isExtension ? await extensionRequest({ type: 'ASSISTANT_CHAT', payload }) : await fetchAssistant(payload);
+    if (state !== workspace) { toast('Your workspace changed. Please send the request again.'); return; }
+    const { additions, duplicates } = prepareAssistantEvents(result, [...state.events, ...state.blocked]);
+    if (additions.length) {
+      const blocked = [...state.blocked, ...additions];
+      const plan = scheduleTasks({ tasks: state.tasks, events: state.events, blocked, preferences: state.preferences, settings: state.settings });
+      Object.assign(state, { blocked, ...plan });
+      currentWeek = weekStart(additions[0].start); agendaDay = dateKey(additions[0].start);
+      response = 'Added to your calendar: ' + additions.map(event => event.title + ' · ' + formatDate(event.start, { weekday: 'short' }) + ', ' + formatTime(event.start) + '–' + formatTime(event.end)).join('; ') + '. London time.';
+      if (duplicates) response += ' Already existing events were skipped.';
+      if (state.unscheduled.length) response += ' Some study tasks need more time; check All tasks.';
+    } else response = duplicates ? 'Those events are already in your calendar. No duplicates were added.' : result.message;
+  } catch (error) { response = error.message; }
+  finally { chatBusy = false; renderChat(); }
+  if (state !== workspace) return;
+  state.messages.push({ role: 'assistant', text: response }); state.messages = state.messages.slice(-30);
+  await persist(); render();
+}
+
+async function submitLocalCommand(text) {
   state.messages.push({ role: 'user', text });
   const command = parseCommand(text, state.tasks);
   let response;
@@ -321,14 +384,17 @@ async function init() {
   }
   render();
   $$('.nav-item[data-view]').forEach(b => b.addEventListener('click', () => { selectedCourse = null; setView(b.dataset.view); render(); }));
-  $('#see-all-tasks').addEventListener('click', () => { selectedCourse = null; setView('tasks'); renderTasks(); });
   $('#all-modules-button').addEventListener('click', () => { selectedCourse = null; setView('courses'); render(); });
   $('#task-filter').addEventListener('change', renderTasks);
   $('#previous-week').addEventListener('click', () => { currentWeek = addDays(currentWeek, -7); agendaDay = null; render(); });
   $('#next-week').addEventListener('click', () => { currentWeek = addDays(currentWeek, 7); agendaDay = null; render(); });
   $('#today-button').addEventListener('click', () => { currentWeek = weekStart(); agendaDay = dateKey(); render(); });
   ['settings-button', 'connections-button', 'mode-badge'].forEach(id => $(`#${id}`).addEventListener('click', openSettings));
-  ['add-task-button', 'quick-add-task'].forEach(id => $(`#${id}`).addEventListener('click', () => openTask()));
+  $('#add-task-button').addEventListener('click', () => openTask());
+  $('#planner-chat').addEventListener('toggle', () => {
+    calendarPreview.sync();
+    if ($('#planner-chat').open) $('#chat-messages').scrollTop = $('#chat-messages').scrollHeight;
+  });
   $$('.close-dialog').forEach(b => b.addEventListener('click', () => b.closest('dialog').close()));
   $$('dialog').forEach(dialog => dialog.addEventListener('click', e => { if (e.target === dialog) { const r = dialog.getBoundingClientRect(); if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) dialog.close(); } }));
   document.addEventListener('click', async e => {
@@ -348,17 +414,16 @@ async function init() {
     if (edit) { const task = state.tasks.find(t => t.id === edit.dataset.editTask); if (task) { $('#event-dialog').close(); openTask(task); } }
     if (course) { selectedCourse = course.dataset.course; $('#task-filter').value = 'all'; setView('tasks'); render(); if (document.body.dataset.input === 'keyboard') $('#page-title').focus({ preventScroll: true }); }
     if (e.target.closest('[data-clear-course]')) { selectedCourse = null; render(); }
-    if (event) openEvent(event.dataset.event);
+    if (event) calendarPreview.select(event.dataset.event);
     if (remove) { state.blocked = state.blocked.filter(b => b.id !== remove.dataset.removeBlock); $('#event-dialog').close(); await changeAndRender(); renderBlocked(); toast('Personal time removed. Your plan has been updated.'); }
     const day = e.target.closest('[data-agenda-day]');
     if (day) {
-      agendaDay = day.dataset.agendaDay; renderAgenda(weekEvents());
+      agendaDay = day.dataset.agendaDay; renderAgenda(calendarPreview.project(weekEvents())); calendarPreview.sync();
       $(`#calendar-agenda [data-agenda-day="${agendaDay}"]`).focus({ preventScroll: true });
     }
     if (e.target.closest('[data-add-task]')) openTask();
     if (e.target.closest('[data-sync-moodle]')) await syncMoodle();
   });
-  $('#generate-button').addEventListener('click', async () => { await changeAndRender(); toast(state.unscheduled.length ? `Plan updated. ${state.unscheduled.length} tasks need more time; see All tasks for details.` : 'A fresh plan, with room for breaks. You’re ready to go.'); });
   $('#sync-button').addEventListener('click', syncMoodle);
   $('#settings-form').addEventListener('submit', async e => {
     e.preventDefault();
@@ -397,8 +462,10 @@ async function init() {
     if (!confirm('Clear all saved tasks, calendar events, timetable URL and preferences from this device?')) return;
     state = emptyWorkspace(); selectedCourse = null; await changeAndRender(false); $('#settings-dialog').close(); setView('week'); toast('Saved data cleared. A little room for a fresh start.');
   });
+  $('#task-repeat').addEventListener('change', updateRepeatPreview);
   $('#task-form').addEventListener('submit', async e => {
     e.preventDefault();
+    if ($('#task-repeat').checked) return; // UI preview must not create a one-off task.
     try {
       const title = $('#task-title').value.trim(), estimatedMinutes = Number($('#task-estimate').value);
       if (!title) throw new Error('Give your task a title.');
@@ -413,8 +480,8 @@ async function init() {
       await changeAndRender(); $('#task-dialog').close(); toast('Task saved. Your study plan has been updated.');
     } catch (error) { $('#task-error').textContent = error.message; }
   });
-  $('#delete-task-button').addEventListener('click', async () => { const id = $('#task-id').value; state.tasks = state.tasks.filter(t => t.id !== id); delete state.preferences[id]; await changeAndRender(); $('#task-dialog').close(); toast('Task removed from your workspace.'); });
-  $('#chat-form').addEventListener('submit', async e => { e.preventDefault(); const text = $('#chat-input').value.trim(); if (!text) return; $('#chat-input').value = ''; await submitChat(text); });
+  $('#delete-task-button').addEventListener('click', () => deleteTask($('#task-id').value, $('#task-dialog')));
+  $('#chat-form').addEventListener('submit', async e => { e.preventDefault(); const text = $('#chat-input').value.trim(); if (!text || chatBusy) return; $('#chat-input').value = ''; await submitChat(text); });
   $$('[data-suggestion]').forEach(b => b.addEventListener('click', () => { $('#chat-input').value = b.dataset.suggestion; $('#chat-input').focus(); }));
   // Refresh the current-time marker without rescheduling an existing plan.
   setInterval(() => { if (document.visibilityState === 'visible' && currentView === 'week') updateNowMarker(); }, 60000);

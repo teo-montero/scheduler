@@ -1,5 +1,7 @@
+import { exerciseAssistant } from './assistant-flow.mjs';
 import { chromium } from '@playwright/test';
 import assert from 'node:assert/strict';
+import { exerciseCalendarPreview } from './calendar-preview-flow.mjs';
 import { exerciseSetup } from './setup-flow.mjs';
 import { mkdtemp, rm, access, readFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
@@ -26,7 +28,7 @@ for (const folder of ['.', 'dist']) {
     await page.waitForSelector('.calendar-event');
     assert.ok(await page.locator('.calendar-event').count() > 10);
     assert.equal(await page.locator('.day-name').count(), 7);
-    await page.getByRole('button', { name: 'Sync Moodle', exact: true }).click();
+    await page.locator('#settings-button').click(); await page.getByRole('button', { name: 'Sync Moodle', exact: true }).click(); await page.locator('#settings-dialog .close-dialog').first().click();
     await page.waitForFunction(() => document.querySelector('#toast').textContent.includes('Open Moodle'));
     console.log(`${folder}: Chrome accepted manifest, worker and dashboard; no-session error handled.`);
     await exerciseSetup(context, 'chrome-extension://' + extensionId);
@@ -39,7 +41,7 @@ for (const folder of ['.', 'dist']) {
       assert.equal(await page.locator('#page-title').textContent(), title);
       assert.equal(await page.locator('.primary-nav [aria-current="page"]').count(), 1);
       assert.equal(await page.locator('.primary-nav [aria-current="page"]').getAttribute('data-view'), view);
-      assert.equal(await page.locator('#focus-summary').isVisible(), view === 'week');
+      assert.equal(await page.locator('#focus-summary').count(), 0);
     }
 
     // A routine clock refresh must not remove the event a keyboard user is focused on.
@@ -50,7 +52,7 @@ for (const folder of ['.', 'dist']) {
     assert.ok(await page.locator('.now-line').evaluate(node => parseFloat(node.style.top)) > markerTop);
     assert.equal(await focusedEvent.evaluate(node => node.isConnected && document.activeElement === node), true);
     await focusedEvent.dispose();
-    console.log('Contextual navigation, weekly summary and focus-preserving clock refresh passed.');
+    console.log('Contextual navigation and focus-preserving clock refresh passed.');
 
     await page.getByRole('button', { name: 'Add task', exact: true }).first().click();
     await page.locator('#task-title').fill('Browser test essay');
@@ -71,11 +73,18 @@ for (const folder of ['.', 'dist']) {
     assert.ok((await page.locator('#all-tasks').textContent()).includes('Browser test essay'));
 
     // A busy-day request, persisted personal time, and a completion through chat.
-    await page.locator('#chat-input').fill('I’m busy tomorrow afternoon');
+    await page.locator('[data-view="week"]').click();
+    assert.equal(await page.locator('#planner-chat').getAttribute('open'), null);
+    await page.locator('#chat-toggle').click();
+    await worker.evaluate(day => {
+      const originalFetch = globalThis.fetch;
+      globalThis.fetch = (url, options) => String(url).endsWith('/api/assistant') ? Promise.resolve(new Response(JSON.stringify({ ok: true, result: { action: 'create_events', message: 'Ready', events: [{ type: 'user_time', title: 'Evening off', description: '', date: day, startTime: '22:00', endDate: day, endTime: '23:00', location: '' }] } }), { headers: { 'Content-Type': 'application/json' } })) : originalFetch(url, options);
+    }, addDays(dateKey(), 1));
+    await page.locator('#chat-input').fill('Add evening off tomorrow from 22:00 to 23:00');
     await page.locator('#chat-form').evaluate(form => form.requestSubmit());
-    await page.waitForFunction(() => document.querySelector('#chat-messages').textContent.includes('now protected'));
+    await page.waitForFunction(() => document.querySelector('#chat-messages').textContent.includes('Added to your calendar'));
     await page.locator('#settings-button').click();
-    assert.ok((await page.locator('#blocked-list').textContent()).includes('Afternoon off'));
+    assert.ok((await page.locator('#blocked-list').textContent()).includes('Evening off'));
     await page.locator('[data-remove-block]').click();
     assert.equal(await page.locator('[data-remove-block]').count(), 0);
     await page.locator('#settings-dialog .close-dialog').first().click();
@@ -96,7 +105,7 @@ for (const folder of ['.', 'dist']) {
       } else await route.fulfill({ contentType: 'text/html', body: '<!doctype html><html><head><title>Simulated Moodle</title></head><body><h1>Test Moodle</h1><script>window.M={cfg:{sesskey:"synthetic-session-key"}};</script></body></html>' });
     });
     const moodle = await context.newPage(); await moodle.goto('https://moodle.ucl.ac.uk/my/');
-    await page.bringToFront(); await page.getByRole('button', { name: 'Sync Moodle', exact: true }).click();
+    await page.bringToFront(); await page.locator('#settings-button').click(); await page.getByRole('button', { name: 'Sync Moodle', exact: true }).click(); await page.locator('#settings-dialog .close-dialog').first().click();
     await page.waitForFunction(() => document.querySelector('#mode-badge').textContent.includes('Your workspace'));
     assert.ok(seenMethods.includes('core_course_get_enrolled_courses_by_timeline_classification'));
     assert.ok(seenMethods.includes('core_calendar_get_action_events_by_timesort'));
@@ -113,7 +122,7 @@ for (const folder of ['.', 'dist']) {
     assert.equal(await page.locator('#task-title').isDisabled(), true);
     assert.equal(await page.evaluate(() => document.activeElement.id), 'task-estimate');
     await page.locator('#task-estimate').fill('180'); await page.getByRole('button', { name: 'Save task', exact: true }).click();
-    await page.getByRole('button', { name: 'Sync Moodle', exact: true }).click();
+    await page.locator('#settings-button').click(); await page.getByRole('button', { name: 'Sync Moodle', exact: true }).click(); await page.locator('#settings-dialog .close-dialog').first().click();
     await page.waitForFunction(() => !document.querySelector('#sync-button').disabled);
     assert.equal((await worker.evaluate(async () => (await chrome.storage.local.get('workspace')).workspace)).tasks[0].estimatedMinutes, 180);
     console.log('Full MAIN-world Moodle sync passed with simulated data; sample removal, entity decoding, estimate persistence and no credential storage verified.');
@@ -212,6 +221,8 @@ for (const folder of ['.', 'dist']) {
     const agendaLecture = page.locator('.agenda-event').filter({ hasText: 'Browser test lecture' });
     assert.equal(await agendaLecture.locator('.agenda-event-time').textContent(), '10:00–11:00');
     await agendaLecture.click();
+    assert.equal(await page.locator('#event-dialog').isVisible(), false);
+    await page.getByRole('button', { name: 'Details', exact: true }).click();
     assert.equal(await page.locator('#event-dialog').isVisible(), true);
     assert.equal(await page.locator('#event-title').textContent(), 'Browser test lecture');
     await page.keyboard.press('Escape');
@@ -230,4 +241,7 @@ for (const folder of ['.', 'dist']) {
     console.log('Mobile layout has no document overflow; no page or service-worker errors.');
   } finally { await context?.close(); await rm(profile, { recursive: true, force: true }); }
 }
+await exerciseCalendarPreview();
 console.log('All browser checks passed.');
+
+await exerciseAssistant();

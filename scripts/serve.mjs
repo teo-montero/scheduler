@@ -1,9 +1,12 @@
 import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { resolve, extname, relative, isAbsolute, sep } from 'node:path';
+import { createAssistantHandler } from '../server/assistant.mjs';
+const assistant = createAssistantHandler();
 const root = resolve('dist');
 const types = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.svg': 'image/svg+xml' };
 createServer(async (req, res) => {
+  if (new URL(req.url, 'http://localhost').pathname === '/api/assistant') return assistant(req, res);
   try {
     const path = resolve(root, `.${decodeURIComponent(new URL(req.url, 'http://localhost').pathname === '/' ? '/dashboard.html' : new URL(req.url, 'http://localhost').pathname)}`);
     const relativePath = relative(root, path);

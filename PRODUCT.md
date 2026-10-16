@@ -20,9 +20,13 @@ A Chrome Manifest V3 extension with a browser preview. Students review their wee
 
 ## Capabilities and Constraints
 
+Calendar editing and onboarding remain UI-only previews. The user explicitly expanded scope for Study assistant: OpenAI generates validated event JSON, the frontend interprets lecture/study/user_time types and saves events locally. A local server holds the API key and performs the OpenAI request.
+
+Calendar editing is a temporary UI preview: selection, drag, resize, collision spacing and event removal use a separate in-memory projection. Reset or reload restores the saved calendar. Never pass this projection to persistence or the scheduler.
+
 - Preserve Moodle sync, calendar subscription and ICS import, task management, module filtering, scheduling preferences, personal time, and local commands.
-- Keep business logic, API contracts, data model and London timezone handling unchanged.
-- All data remains on the device. No analytics, remote scripts, remote fonts or AI service.
+- Preserve existing integrations and London timezone handling. Assistant events add an explicit type and description to the existing calendar model.
+- Calendar storage remains local. Chat messages and minimal upcoming calendar context are sent to OpenAI only when using the assistant; disclose this in the chat UI. No analytics, remote scripts or remote fonts.
 - Use the existing JavaScript modules, HTML, CSS, SVG icons and esbuild stack.
 - Sample workspace data is illustrative and must remain clearly labelled.
 

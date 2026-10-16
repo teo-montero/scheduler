@@ -10,6 +10,7 @@ export async function exerciseSetup(context, origin) {
   await context.route('https://moodle.ucl.ac.uk/my/', route => route.fulfill({ contentType: 'text/html', body: '<title>Moodle test destination</title>' }));
   try {
     await page.goto(`${origin}/dashboard.html`);
+    await page.locator('#settings-button').click();
     await page.locator('#start-button').click();
     await page.waitForURL('**/setup.html');
     const before = await page.evaluate(async () => ({ extension: await chrome.storage.local.get(null), local: { ...localStorage } }));
@@ -59,6 +60,7 @@ export async function exerciseSetup(context, origin) {
     for (let step = 0; step < 4; step++) await page.locator('#setup-next').click();
     await page.waitForURL('**/dashboard.html');
     await page.waitForSelector('#page-title');
+    await page.locator('#settings-button').click();
     await page.locator('#start-button').click();
     await page.getByRole('link', { name: 'Skip setup' }).click();
     await page.waitForURL('**/dashboard.html');

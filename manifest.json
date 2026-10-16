@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "Study Space \u00b7 UCL Planner",
+  "name": "Study Space · UCL Planner",
   "version": "1.0.1",
   "minimum_chrome_version": "111",
   "description": "Bring your UCL deadlines and timetable together, and make room for focused study.",
@@ -11,7 +11,8 @@
   "host_permissions": [
     "https://moodle.ucl.ac.uk/*",
     "https://timetable.apps.ucl.ac.uk/*",
-    "https://timetable.mesh.ucl.ac.uk/*"
+    "https://timetable.mesh.ucl.ac.uk/*",
+    "http://127.0.0.1/*"
   ],
   "background": {
     "service_worker": "background.js",
