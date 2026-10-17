@@ -30,9 +30,9 @@ test('home/campus preferences produce commute events and respect lecture > perso
     assert.equal(generated.planning.engine, 'ai'); assert.deepEqual(generated.events, state.events);
   }
 });
-test('AI cannot invent tasks, overlap commitments, exceed workload, ignore location or remove breaks', async () => {
+test('AI cannot invent tasks, overlap commitments, exceed workload, ignore location or fragment continuous tasks', async () => {
   const state = workspace(), context = buildPlanningContext(state, now);
-  const good = { taskId: 'sheet', start: atTime('2026-10-19', 16).toISOString(), end: atTime('2026-10-19', 16, 50).toISOString(), location: 'home' };
+  const good = { taskId: 'sheet', start: atTime('2026-10-19', 16).toISOString(), end: atTime('2026-10-19', 18).toISOString(), location: 'home' };
   assert.equal(validateStudyPlan(context, { sessions: [good] }).blocks.length, 1);
   for (const sessions of [
     [{ ...good, taskId: 'invented' }], [{ ...good, ...slot(10, 11) }], [{ ...good, location: 'campus' }],
@@ -50,6 +50,47 @@ test('recurrence preserves London clock times across DST, supports overnight act
   const state = workspace(); state.weeklyActivities[0].startTime = '11:00'; state.weeklyActivities[0].endTime = '13:00';
   const context = buildPlanningContext(state, now); assert.ok(context.conflicts.length > 0); assert.equal(context.fixedEvents.find(event => event.id === 'lecture').priority, 3);
   assert.deepEqual(state.events[0], workspace().events[0]);
+});
+test('sheets and lecture study stay continuous, skip short gaps and get breaks between tasks', () => {
+  const state = { ...emptyWorkspace(), personal: { commuteMinutes: 0, studyLocation: 'home' }, settings: { ...emptyWorkspace().settings, blockMinutes: 50, horizonDays: 1 },
+    events: [{ id: 'class', title: 'Class', ...slot(10, 11) }], tasks: [
+      { id: 'a-sheet', title: 'Problem sheet', estimatedMinutes: 120 },
+      { id: 'b-notes', title: 'Lecture notes', estimatedMinutes: 150 }
+    ] };
+  const context = buildPlanningContext(state, now);
+  assert.equal(context.settings.blockMinutes, 120, 'Old 50-minute settings do not recreate fragments');
+  const plan = validateStudyPlan(context, localStudyPlan(context));
+  assert.equal(plan.blocks.length, 2);
+  assert.equal(plan.blocks[0].start, atTime('2026-10-19', 11).toISOString());
+  assert.equal((new Date(plan.blocks[0].end) - new Date(plan.blocks[0].start)) / 60000, 120);
+  assert.equal((new Date(plan.blocks[1].end) - new Date(plan.blocks[1].start)) / 60000, 150);
+  assert.equal((new Date(plan.blocks[1].start) - new Date(plan.blocks[0].end)) / 60000, 10);
+  assert.throws(() => validateStudyPlan(context, { sessions: [{ taskId: 'a-sheet', ...slot(11, 12), location: 'home' }] }), /continuous block/);
+  state.settings.endHour = 12;
+  const tight = buildPlanningContext(state, now), unplanned = validateStudyPlan(tight, localStudyPlan(tight));
+  assert.equal(unplanned.blocks.length, 0, 'Two separate one-hour gaps cannot hold a two-hour task');
+  assert.equal(unplanned.unscheduled.find(item => item.taskId === 'a-sheet').minutes, 120);
+});
+test('inter-block breaks are optional when a deadline only permits back-to-back continuous blocks', () => {
+  const state = { ...emptyWorkspace(), settings: { ...emptyWorkspace().settings, horizonDays: 1, endHour: 13 }, tasks: [
+    { id: 'a', title: 'Sheet A', estimatedMinutes: 120 }, { id: 'b', title: 'Sheet B', estimatedMinutes: 120 }
+  ] };
+  const context = buildPlanningContext(state, now), plan = validateStudyPlan(context, localStudyPlan(context));
+  assert.equal(plan.blocks.length, 2); assert.equal(plan.unscheduled.length, 0);
+  assert.equal(plan.blocks[0].end, plan.blocks[1].start);
+});
+test('opening a saved fragmented plan migrates it once without AI or changes to source data', async () => {
+  let stored = workspace(), saves = 0;
+  stored.tasks[0].estimatedMinutes = 120;
+  stored.blocks = [{ id: 'old-fragment', taskId: 'sheet', title: 'Exercise sheet', ...slot(16, 16.5), source: 'study' }];
+  const originalEvents = structuredClone(stored.events);
+  const planner = createPlannerService({ storage: { load: async () => structuredClone(stored), save: async state => { saves++; stored = structuredClone(state); } }, connections: {}, ai: { plan: async () => { throw new Error('Migration must not call AI'); } }, now: () => now });
+  const migrated = await planner.getWorkspace();
+  assert.equal(migrated.blocks.length, 1);
+  assert.equal((new Date(migrated.blocks[0].end) - new Date(migrated.blocks[0].start)) / 60000, 120);
+  assert.deepEqual(migrated.events, originalEvents);
+  assert.ok(migrated.planning.blockPolicyVersion);
+  await planner.getWorkspace(); assert.equal(saves, 1, 'A current plan is not rebuilt on each open');
 });
 test('fetch-only onboarding saves only selected indexes before AI and handles failure without losing other data', async () => {
   let stored = workspace(), calls = [], aiCalls = 0;

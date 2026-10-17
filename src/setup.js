@@ -112,8 +112,11 @@ form.addEventListener('submit', event => {
     const weeklyActivities = [...activities.children].map(row => ({ id: row.dataset.activityId, title: row.querySelector('[name^="activity-"]').value,
       days: [...row.querySelectorAll('input[type="checkbox"]:checked')].map(input => days.indexOf(input.value)), startTime: row.querySelector('[name^="activity-start-"]').value, endTime: row.querySelector('[name^="activity-end-"]').value }));
     workspace = await planner.savePersonal({ weeklyActivities });
-    workspace = await planner.createPlan({ useAI: false });
-    workspace.analysisWarnings = [];
+    if (coursesLoaded && selectedCourseIds().length) await checkCourseData();
+    status.textContent = 'Analysing your selected modules and creating your week…';
+    const analysed = await planner.analyseSelectedCourses();
+    workspace = await planner.createPlan();
+    workspace.analysisWarnings = analysed.errors.map(error => error.message);
     workspace.setupComplete = true; workspace.setupCompletedAt = new Date().toISOString();
     await planner.saveWorkspace(workspace);
     window.location.assign('dashboard.html');

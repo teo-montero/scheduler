@@ -54,7 +54,7 @@ export function createMoodleConnection(browser = globalThis.chrome) {
       return result;
     }
     catch (error) {
-      const fallback = options.allowFallback === true ? getMoodleFallback(options, error) : null;
+      const fallback = options.allowFallback === false ? null : getMoodleFallback(options, error);
       if (fallback) return fallback;
       throw error;
     }

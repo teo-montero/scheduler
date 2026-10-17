@@ -156,8 +156,8 @@ A current-time line is refreshed every minute while the weekly view is visible. 
 | Setting | Default |
 | --- | --- |
 | Study hours | 09:00–18:00, London time. |
-| Focus block | Up to 50 minutes. |
-| Break after a block | 10 minutes. |
+| Focus block | One continuous 120-minute sheet or 150-minute lecture-content task; longer work uses two-hour blocks and a final remainder. |
+| Break between study blocks | Prefer 10 minutes, omitted only when necessary in the current planner. |
 | Weekends | Excluded. |
 | Planning horizon | 28 calendar days from today. |
 
@@ -193,15 +193,7 @@ If the cursor has not reached the day’s cutoff, the remaining tail of the day 
 
 ### Step 4: Allocate focus sessions
 
-For each gap, choose:
-
-```text
-session minutes = min(task minutes remaining,
-                      configured block length,
-                      whole minutes left in the gap)
-```
-
-Ordinarily a gap must hold at least 15 minutes to be used. A final task remainder shorter than 15 minutes is allowed; for example, a 60-minute estimate can become a 50-minute block and a final 10-minute block.
+Tasks of 150 minutes or less stay in a single continuous event using their full estimated duration. Longer tasks use 120-minute blocks and a final remainder. A gap must fit the whole required block; small gaps are skipped, rather than turning a two-hour sheet into scattered short sessions. The current planner tries placing a break between study blocks first and retries without that optional break only when no placement with a break fits. AI output is validated against the same continuous-block rule.
 
 Each session contains its task link and display fields:
 
@@ -238,18 +230,9 @@ Other reasons include an invalid deadline, a passed deadline, or insufficient ro
 
 ### Worked example
 
-Suppose a task requires 120 minutes, is due Monday at 17:00, and planning begins Monday at 09:00. There is a lecture from 10:00 to 11:30. With 50-minute blocks and 10-minute breaks, the generated sessions are:
+Suppose a sheet requires 120 minutes, is due Monday at 17:00, and planning begins Monday at 09:00. There is a lecture from 10:00 to 11:30. The 09:00–10:00 gap is too short, so the sheet is scheduled as one 11:30–13:30 block. A following study block preferably starts at 13:40, allowing a ten-minute break.
 
-| Time | Allocation | Work remaining |
-| --- | --- | --- |
-| 09:00–09:50 | Study for 50 minutes. | 70 minutes. |
-| 09:50–10:00 | Reserved break. | 70 minutes. |
-| 10:00–11:30 | Existing lecture. | 70 minutes. |
-| 11:30–12:20 | Study for 50 minutes. | 20 minutes. |
-| 12:20–12:30 | Reserved break. | 20 minutes. |
-| 12:30–12:50 | Study for 20 minutes. | 0 minutes. |
-
-If the same 120-minute task instead had a 10:00 deadline and no lecture, only the first 50-minute block would fit under these break rules. The remaining 70 minutes would be reported as unscheduled.
+If the same sheet instead has a 10:00 deadline, it is left entirely unscheduled (120 minutes remaining). The planner does not squeeze a fragment into the hour before its deadline.
 
 ## Reviewing extracted work
 

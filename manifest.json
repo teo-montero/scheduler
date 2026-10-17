@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Study Space · UCL Planner",
-  "version": "1.2.6",
+  "version": "1.2.8",
   "minimum_chrome_version": "111",
   "description": "Bring your UCL deadlines and timetable together, and make room for focused study.",
   "permissions": [

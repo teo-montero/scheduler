@@ -1,5 +1,6 @@
 import { addDays, atTime, dateKey, weekday } from './dates.js';
-export const DEFAULT_SETTINGS = { startHour: 9, endHour: 18, blockMinutes: 50, breakMinutes: 10, weekends: false, horizonDays: 28 };
+import { nextStudyBlockMinutes, STUDY_BLOCK_MINUTES } from './study-blocks.js';
+export const DEFAULT_SETTINGS = { startHour: 9, endHour: 18, blockMinutes: STUDY_BLOCK_MINUTES, breakMinutes: 10, weekends: false, horizonDays: 28 };
 const ms = minutes => minutes * 60000;
 export function scheduleTasks({ tasks, events = [], blocked = [], preferences = {}, settings = {}, now = new Date() }) {
   const config = { ...DEFAULT_SETTINGS, ...settings };
@@ -35,9 +36,9 @@ export function scheduleTasks({ tasks, events = [], blocked = [], preferences = 
       if (cursor < end) gaps.push([cursor, end]);
       for (const [gapStart, gapEnd] of gaps) {
         let slot = gapStart;
-        while (remaining > 0 && gapEnd - slot >= ms(Math.min(15, remaining))) {
-          const length = Math.min(remaining, config.blockMinutes, Math.floor((gapEnd - slot) / ms(1)));
-          if (length < Math.min(15, remaining)) break;
+        while (remaining > 0) {
+          const length = nextStudyBlockMinutes({ estimatedMinutes: Math.max(0, Math.round(Number(task.estimatedMinutes) || 120)) }, remaining);
+          if (gapEnd - slot < ms(length)) break;
           const block = { id: `study-${task.id}-${slot}`, taskId: task.id, courseId: task.courseId, courseName: task.courseName, title: task.title, start: new Date(slot).toISOString(), end: new Date(slot + ms(length)).toISOString(), source: 'study' };
           blocks.push(block);
           // A break is reserved after every focus block, including between tasks.

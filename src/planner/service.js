@@ -7,6 +7,7 @@ import { generateWorkspacePlan, normalizePersonal, normalizeWeeklyActivities } f
 import { addDays, atTime, dateKey } from '../dates.js';
 import { parseCommand } from '../commands.js';
 import { applyChatActions } from './chat.js';
+import { STUDY_BLOCK_POLICY_VERSION } from '../study-blocks.js';
 
 // UI-independent orchestration. Providers, persistence and clock can be replaced in tests.
 export function createPlannerService({ storage, connections, ai, now = () => new Date() }) {
@@ -21,7 +22,15 @@ export function createPlannerService({ storage, connections, ai, now = () => new
   const progress = (stage, course, index, total) => emit({ type: 'progress', stage, course, index, total });
   return {
     subscribe(listener) { listeners.add(listener); return () => listeners.delete(listener); },
-    getWorkspace: () => run(load),
+    getWorkspace: () => run(async () => {
+      const state = await load();
+      if (state.mode !== 'demo' && state.blocks?.length && state.planning?.blockPolicyVersion !== STUDY_BLOCK_POLICY_VERSION) {
+        const updated = await replan(state);
+        updated.planning.warning = 'Your saved plan was updated to use continuous study blocks.';
+        return save(updated);
+      }
+      return state;
+    }),
     saveWorkspace: state => run(() => save(normalizeWorkspace(state))),
     openMoodle: () => connections.moodle.open(),
     connectTimetable: url => run(async () => {

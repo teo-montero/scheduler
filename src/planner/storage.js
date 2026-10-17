@@ -5,7 +5,7 @@ import { DEFAULT_SETTINGS } from '../scheduler.js';
 export function normalizeWorkspace(input) {
   if (!input || !Array.isArray(input.tasks) || !Array.isArray(input.events)) return emptyWorkspace();
   const state = { ...emptyWorkspace(), ...input };
-  state.settings = { ...DEFAULT_SETTINGS, ...input.settings };
+  state.settings = { ...DEFAULT_SETTINGS, ...input.settings, blockMinutes: DEFAULT_SETTINGS.blockMinutes };
   state.excludedCourseIds ||= [];
   state.personal ||= { commuteMinutes: 0, studyLocation: 'either' };
   state.weeklyActivities ||= [];

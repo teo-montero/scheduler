@@ -1,5 +1,4 @@
 import { createBrowserPlanner } from './planner/index.js';
-import { normalizeWorkspace } from './planner/storage.js';
 import { consideredTasks } from './modules.js';
 const planner = createBrowserPlanner();
 import { prepareAssistantEvents, calendarEventType, calendarEventClass } from './assistant-events.js';
@@ -7,7 +6,9 @@ import { fetchAssistant } from './assistant-client.js';
 import { createCalendarPreview } from './calendar-preview.js';
 import { BUILD_ID, TIMETABLE_ORIGINS } from './protocol.js';
 import { addDays, atTime, dateKey, dateParts, weekStart, minutesOfDay, formatTime, formatDate, durationLabel } from './dates.js';
-import { scheduleTasks } from './scheduler.js';
+import { generateWorkspacePlan } from './planner/planning.js';
+import { hasCompletedSetup } from './onboarding.js';
+import { requestPlan } from './analysis-client.js';
 import { createDemo, emptyWorkspace } from './demo.js';
 import { parseCommand } from './commands.js';
 import { parseTimetable, validateCalendarUrl } from './ical.js';
@@ -52,11 +53,10 @@ async function persist() {
     else localStorage.setItem('studyspace-workspace-v1', JSON.stringify(state));
   } catch { toast('Your browser could not save this workspace. Changes will last only while this page is open.', true); }
 }
-function regenerate() {
-  const plan = scheduleTasks({ tasks: consideredTasks(state), events: state.events, blocked: [...state.blocked, ...(state.personalEvents || [])], preferences: state.preferences, settings: state.settings });
-  state.blocks = plan.blocks; state.unscheduled = plan.unscheduled;
+async function regenerate(useAI = false) {
+  Object.assign(state, await generateWorkspacePlan(state, { useAI, ...(useAI ? { ai: { plan: requestPlan } } : {}) }));
 }
-async function changeAndRender(replan = true) { if (replan) regenerate(); await persist(); render(); }
+async function changeAndRender(replan = true) { if (replan) await regenerate(); await persist(); render(); }
 function weekEvents() {
   const start = atTime(currentWeek), end = atTime(addDays(currentWeek, 7));
   return [...state.events, ...state.blocks, ...state.blocked, ...(state.personalEvents || [])].filter(e => new Date(e.end) > start && new Date(e.start) < end);
@@ -341,8 +341,8 @@ async function submitChat(text) {
     const { additions, duplicates } = prepareAssistantEvents(result, [...state.events, ...state.blocked, ...(state.personalEvents || [])]);
     if (additions.length) {
       const blocked = [...state.blocked, ...additions];
-      const plan = scheduleTasks({ tasks: consideredTasks(state), events: state.events, blocked: [...blocked, ...(state.personalEvents || [])], preferences: state.preferences, settings: state.settings });
-      Object.assign(state, { blocked, ...plan });
+      state.blocked = blocked;
+      await regenerate();
       currentWeek = weekStart(additions[0].start); agendaDay = dateKey(additions[0].start);
       response = 'Added to your calendar: ' + additions.map(event => event.title + ' · ' + formatDate(event.start, { weekday: 'short' }) + ', ' + formatTime(event.start) + '–' + formatTime(event.end)).join('; ') + '. London time.';
       if (duplicates) response += ' Already existing events were skipped.';
@@ -362,11 +362,11 @@ async function submitLocalCommand(text) {
   if (command.error) response = command.error;
   else if (command.type === 'block') {
     if (state.blocked.some(e => e.id === command.event.id)) response = 'That time is already blocked in your calendar.';
-    else { state.blocked.push(command.event); regenerate(); response = `Your ${formatDate(command.event.start, { weekday: 'long' })}, ${formatTime(command.event.start)}–${formatTime(command.event.end)}, is now protected. I’ve moved your study sessions around it. Your timetable commitments stay in place.`; }
+    else { state.blocked.push(command.event); await regenerate(); response = `Your ${formatDate(command.event.start, { weekday: 'long' })}, ${formatTime(command.event.start)}–${formatTime(command.event.end)}, is now protected. I’ve moved your study sessions around it. Your timetable commitments stay in place.`; }
   } else if (command.type === 'complete') {
-    command.task.completed = true; regenerate(); response = `“${command.task.title}” is checked off. I’ve cleared its study sessions and updated your plan. Enjoy a little extra breathing room.`;
+    command.task.completed = true; await regenerate(); response = `“${command.task.title}” is checked off. I’ve cleared its study sessions and updated your plan. Enjoy a little extra breathing room.`;
   } else if (command.type === 'move') {
-    state.preferences[command.task.id] = { date: command.date }; regenerate();
+    state.preferences[command.task.id] = { date: command.date }; await regenerate();
     const missing = state.unscheduled.find(u => u.taskId === command.task.id);
     response = missing ? `I’ve kept “${command.task.title}” on ${formatDate(atTime(command.date), { weekday: 'long' })}, but ${durationLabel(missing.minutes)} won’t fit before the deadline. Try another day or extend your study hours in Preferences.` : `“${command.task.title}” is now planned for ${formatDate(atTime(command.date), { weekday: 'long' })}. I’ve worked around your commitments and kept breaks between sessions.`;
   }
@@ -380,15 +380,16 @@ async function init() {
   document.addEventListener('keydown', () => { document.body.dataset.input = 'keyboard'; }, { capture: true });
   document.addEventListener('pointerdown', () => { document.body.dataset.input = 'pointer'; }, { capture: true });
   try {
-    state = isExtension ? (await chrome.storage.local.get('workspace')).workspace : JSON.parse(localStorage.getItem('studyspace-workspace-v1') || 'null');
-    if (state?.version !== 1 || !Array.isArray(state.tasks) || !Array.isArray(state.events)) state = createDemo();
-    state = normalizeWorkspace(state); state.preferences ||= {}; state.blocked ||= []; state.messages ||= [];
-  } catch { state = createDemo(); }
+    state = await planner.getWorkspace();
+    state.preferences ||= {}; state.blocked ||= []; state.messages ||= [];
+  } catch { state = emptyWorkspace(); }
+  if (!hasCompletedSetup(state) && new URL(window.location.href).searchParams.get('skipSetup') !== '1') { window.location.replace('setup.html'); return; }
   for (let hour = 5; hour <= 23; hour++) {
     if (hour <= 21) $('#start-hour').add(new Option(`${String(hour).padStart(2, '0')}:00`, hour));
     if (hour >= 6) $('#end-hour').add(new Option(`${String(hour).padStart(2, '0')}:00`, hour));
   }
   render();
+  if (state.analysisWarnings?.length || state.planning?.warning) toast([...(state.analysisWarnings || []), state.planning?.warning].filter(Boolean).join(' '), true);
   $$('.nav-item[data-view]').forEach(b => b.addEventListener('click', () => { selectedCourse = null; setView(b.dataset.view); render(); }));
   $('#all-modules-button').addEventListener('click', () => { selectedCourse = null; setView('courses'); render(); });
   $('#task-filter').addEventListener('change', renderTasks);
@@ -397,6 +398,12 @@ async function init() {
   $('#today-button').addEventListener('click', () => { currentWeek = weekStart(); agendaDay = dateKey(); render(); });
   ['settings-button', 'connections-button', 'mode-badge'].forEach(id => $(`#${id}`).addEventListener('click', openSettings));
   $('#add-task-button').addEventListener('click', () => openTask());
+  $('#regenerate-plan').addEventListener('click', async () => {
+    const button = $('#regenerate-plan'); button.disabled = true; button.textContent = 'Planning…';
+    try { await regenerate(true); await persist(); render(); toast(state.planning?.warning || 'Your study plan has been updated.', true); }
+    catch (error) { toast(error.message, true); }
+    finally { button.disabled = false; button.textContent = 'Regenerate plan'; }
+  });
   $('#planner-chat').addEventListener('toggle', () => {
     calendarPreview.sync();
     if ($('#planner-chat').open) $('#chat-messages').scrollTop = $('#chat-messages').scrollHeight;

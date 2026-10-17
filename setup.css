@@ -118,3 +118,7 @@
 .setup-course-actions .setup-help:empty { display: none; }
 .setup-restart-actions { display: flex; flex-wrap: wrap; gap: 16px; margin: -16px 0 24px; }
 .setup-restart-actions button { min-height: 36px; font-size: 12px; }
+
+/* Keep source codes compact and names readable without repeated year suffixes. */
+.module-choice-code { align-self: flex-start; font-size: 11px; font-weight: 650; letter-spacing: .035em; }
+.module-choice-status { color: var(--muted); font-size: 11px; line-height: 1.6; }

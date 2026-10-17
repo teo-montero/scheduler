@@ -2,6 +2,7 @@ import { addDays, atTime, dateKey, weekday, TIME_ZONE } from '../dates.js';
 import { DEFAULT_SETTINGS } from '../scheduler.js';
 import { hasSampleData, schedulableTasks } from '../modules.js';
 import { plainText } from '../course-content.js';
+import { nextStudyBlockMinutes, STUDY_BLOCK_MINUTES, STUDY_BLOCK_POLICY_VERSION } from '../study-blocks.js';
 
 const minute = 60000;
 const stamp = value => new Date(value).getTime();
@@ -50,7 +51,7 @@ function fixedEvent(event, kind, priority) {
   return { ...event, start: iso(event.start), end: iso(event.end), kind, priority, immutable: true };
 }
 export function buildPlanningContext(workspace, now = new Date()) {
-  const settings = { ...DEFAULT_SETTINGS, ...workspace.settings, dailyStudyLimitMinutes: workspace.settings?.dailyStudyLimitMinutes ?? 360 };
+  const settings = { ...DEFAULT_SETTINGS, ...workspace.settings, blockMinutes: STUDY_BLOCK_MINUTES, dailyStudyLimitMinutes: workspace.settings?.dailyStudyLimitMinutes ?? 360 };
   if (!Number.isInteger(settings.horizonDays) || settings.horizonDays < 1 || settings.horizonDays > 90 || settings.startHour < 0 || settings.endHour > 24 || settings.startHour >= settings.endHour || settings.blockMinutes < 15 || settings.blockMinutes > 120 || settings.breakMinutes < 0 || !Number.isInteger(settings.dailyStudyLimitMinutes) || settings.dailyStudyLimitMinutes < 15 || settings.dailyStudyLimitMinutes > 720) throw new Error('Invalid planning settings.');
   const personal = normalizePersonal(workspace.personal), end = atTime(addDays(dateKey(now), settings.horizonDays));
   const within = e => stamp(e.end) > stamp(now) && stamp(e.start) < stamp(end);
@@ -108,17 +109,18 @@ export function buildPlanningContext(workspace, now = new Date()) {
 export function validateStudyPlan(context, output) {
   if (!output || !Array.isArray(output.sessions) || output.sessions.length > 4000) throw new Error('AI returned an invalid study plan.');
   const tasks = new Map(context.tasks.map(t => [t.id, t])), used = new Map(), daily = new Map();
-  const sessions = output.sessions.map((session, index) => {
+  const sessions = [...output.sessions].sort((a, b) => stamp(a.start) - stamp(b.start)).map((session, index) => {
     const task = tasks.get(String(session.taskId)), start = stamp(session.start), end = stamp(session.end), duration = (end - start) / minute;
     const window = context.windows.find(w => w.location === session.location && start >= stamp(w.start) && end <= stamp(w.end));
-    if (!task || !window || !Number.isInteger(duration) || duration < 1 || duration > context.settings.blockMinutes || start < stamp(context.now) || end > stamp(context.horizonEnd) || task.dueDate && end > stamp(task.dueDate) || task.notBefore && start < stamp(task.notBefore) || task.preferredDate && dateKey(start) !== task.preferredDate || context.busy.some(e => overlaps(session, e))) throw new Error('AI scheduled work outside availability, after a deadline, or over a higher-priority event.');
+    if (!task || !window || !Number.isInteger(duration) || duration < 1 || start < stamp(context.now) || end > stamp(context.horizonEnd) || task.dueDate && end > stamp(task.dueDate) || task.notBefore && start < stamp(task.notBefore) || task.preferredDate && dateKey(start) !== task.preferredDate || context.busy.some(e => overlaps(session, e))) throw new Error('AI scheduled work outside availability, after a deadline, or over a higher-priority event.');
+    if (duration !== nextStudyBlockMinutes(task, task.estimatedMinutes - (used.get(task.id) || 0))) throw new Error('Study work must use a continuous block: 120 minutes per sheet, 150 minutes per lecture, and two-hour blocks for longer tasks. Do not split a task into short fragments.');
     used.set(task.id, (used.get(task.id) || 0) + duration);
     daily.set(window.date, (daily.get(window.date) || 0) + duration);
     if (duration < 15 && used.get(task.id) !== task.estimatedMinutes) throw new Error('AI created a study fragment shorter than 15 minutes.');
     if (used.get(task.id) > task.estimatedMinutes || daily.get(window.date) > context.settings.dailyStudyLimitMinutes) throw new Error('AI exceeded the task workload or daily study limit.');
     return { id: `study-${task.id}-${start}-${index}`, taskId: task.id, courseId: task.courseId, title: task.title, courseName: task.courseName, start: iso(start), end: iso(end), source: 'study', kind: 'study', priority: 1, location: session.location };
   }).sort((a, b) => stamp(a.start) - stamp(b.start));
-  for (let i = 1; i < sessions.length; i++) if (dateKey(sessions[i].start) === dateKey(sessions[i - 1].start) && stamp(sessions[i].start) < stamp(sessions[i - 1].end) + context.settings.breakMinutes * minute) throw new Error('AI overlapped study sessions or omitted a break.');
+  for (let i = 1; i < sessions.length; i++) if (stamp(sessions[i].start) < stamp(sessions[i - 1].end)) throw new Error('AI overlapped study sessions.');
   const unscheduled = context.tasks.flatMap(task => {
     if (task.notBefore && stamp(task.notBefore) >= stamp(context.horizonEnd) && !task.dueDate) return [];
     const minutes = task.estimatedMinutes - (used.get(task.id) || 0);
@@ -131,26 +133,35 @@ export function validateStudyPlan(context, output) {
 
 // Used for immediate local edits and explicitly reported fallback when AI is unavailable.
 export function localStudyPlan(context) {
-  const sessions = [], busy = [...context.busy], daily = new Map();
+  const sessions = [], daily = new Map();
+  const round = value => Math.ceil(value / (5 * minute)) * 5 * minute;
+  function findSlot(task, length, breakMinutes) {
+    const padding = breakMinutes * minute;
+    const previousTaskEnd = Math.max(0, ...sessions.filter(session => session.taskId === task.id).map(session => stamp(session.end)));
+    const busy = [...context.busy, ...sessions.map(session => ({ start: iso(stamp(session.start) - padding), end: iso(stamp(session.end) + padding) }))];
+    for (const window of context.windows) {
+      if (task.preferredDate && task.preferredDate !== window.date || length > context.settings.dailyStudyLimitMinutes - (daily.get(window.date) || 0)) continue;
+      let cursor = round(Math.max(stamp(window.start), stamp(context.now), previousTaskEnd, task.notBefore ? stamp(task.notBefore) : 0));
+      const end = Math.min(stamp(window.end), stamp(context.horizonEnd), task.dueDate ? stamp(task.dueDate) : Infinity);
+      for (const hit of busy.filter(event => stamp(event.end) > cursor && stamp(event.start) < end).sort((a, b) => stamp(a.start) - stamp(b.start))) {
+        if (cursor + length * minute <= Math.min(stamp(hit.start), end)) return { window, start: cursor };
+        cursor = round(Math.max(cursor, stamp(hit.end)));
+        if (cursor + length * minute > end) break;
+      }
+      if (cursor + length * minute <= end) return { window, start: cursor };
+    }
+    return null;
+  }
   const pending = [...context.tasks].sort((a, b) => (a.dueDate ? stamp(a.dueDate) : Infinity) - (b.dueDate ? stamp(b.dueDate) : Infinity) || a.id.localeCompare(b.id));
   for (const task of pending) {
     let remaining = task.estimatedMinutes;
-    for (const window of context.windows) {
-      if (!remaining || task.preferredDate && task.preferredDate !== window.date) continue;
-      let cursor = Math.ceil(Math.max(stamp(window.start), task.notBefore ? stamp(task.notBefore) : 0) / (5 * minute)) * 5 * minute;
-      const end = Math.min(stamp(window.end), task.dueDate ? stamp(task.dueDate) : Infinity);
-      while (remaining && cursor < end) {
-        const dailyRoom = context.settings.dailyStudyLimitMinutes - (daily.get(window.date) || 0);
-        if (dailyRoom <= 0) break;
-        const hit = busy.filter(e => stamp(e.end) > cursor && stamp(e.start) < end).sort((a, b) => stamp(a.start) - stamp(b.start))[0];
-        if (hit && stamp(hit.start) <= cursor) { cursor = stamp(hit.end); continue; }
-        const available = Math.floor((Math.min(end, hit ? stamp(hit.start) : Infinity) - cursor) / minute);
-        const length = Math.min(remaining, context.settings.blockMinutes, available, dailyRoom);
-        if (length < Math.min(15, remaining)) { if (hit) { cursor = stamp(hit.end); continue; } break; }
-        sessions.push({ taskId: task.id, start: iso(cursor), end: iso(cursor + length * minute), location: window.location });
-        busy.push({ start: iso(cursor), end: iso(cursor + (length + context.settings.breakMinutes) * minute) });
-        daily.set(window.date, (daily.get(window.date) || 0) + length); remaining -= length; cursor += (length + context.settings.breakMinutes) * minute;
-      }
+    while (remaining > 0) {
+      const length = nextStudyBlockMinutes(task, remaining);
+      const slot = findSlot(task, length, context.settings.breakMinutes) || findSlot(task, length, 0);
+      if (!slot) break;
+      sessions.push({ taskId: task.id, start: iso(slot.start), end: iso(slot.start + length * minute), location: slot.window.location });
+      daily.set(slot.window.date, (daily.get(slot.window.date) || 0) + length);
+      remaining -= length;
     }
   }
   return { sessions, note: 'Local deadline-first allocation.' };
@@ -171,5 +182,5 @@ export async function generateWorkspacePlan(workspace, { ai, now = new Date(), u
   let plan;
   try { plan = validateStudyPlan(context, output); }
   catch (error) { plan = validateStudyPlan(context, localStudyPlan(context)); engine = 'local-fallback'; warning = `AI plan rejected: ${error.message} A local plan was generated instead.`; }
-  return { ...workspace, ...plan, planning: { engine, warning, conflicts: plan.conflicts, generatedAt: iso(now), note: plainText(output.note).slice(0, 500), provider: engine === 'ai' ? output.provider || 'AI' : null, model: engine === 'ai' ? output.model || null : null, usage: engine === 'ai' ? output.usage || null : null } };
+  return { ...workspace, ...plan, planning: { blockPolicyVersion: STUDY_BLOCK_POLICY_VERSION, engine, warning, conflicts: plan.conflicts, generatedAt: iso(now), note: plainText(output.note).slice(0, 500), provider: engine === 'ai' ? output.provider || 'AI' : null, model: engine === 'ai' ? output.model || null : null, usage: engine === 'ai' ? output.usage || null : null } };
 }

@@ -13,7 +13,7 @@
   <a class="skip-link" href="#setup-title-1">Skip to setup</a>
   <div class="setup-shell">
     <aside class="setup-sidebar" aria-label="Setup progress">
-      <a class="brand" href="dashboard.html" aria-label="Study Space home"><img src="assets/mark.svg" width="34" height="34" alt=""><span>study<span class="brand-light">space</span></span></a>
+      <a class="brand" href="dashboard.html?skipSetup=1" aria-label="Study Space home"><img src="assets/mark.svg" width="34" height="34" alt=""><span>study<span class="brand-light">space</span></span></a>
       <div class="setup-intro"><h2>A week that works for you.</h2><p>Start with your classes. Make room for everything else.</p></div>
       <ol class="setup-steps">
         <li aria-current="step"><span class="step-number">1</span><span>Timetable<small>Your university schedule</small></span></li>
@@ -24,7 +24,7 @@
       <p class="setup-sidebar-note">Made for UCL students.<br>A little room to breathe.</p>
     </aside>
     <main class="setup-main">
-      <header class="setup-top"><span>Set up your space</span><a href="dashboard.html">Skip setup <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-5-5 5 5-5 5"/></svg></a></header>
+      <header class="setup-top"><span>Set up your space</span><a href="dashboard.html?skipSetup=1">Skip setup <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-5-5 5 5-5 5"/></svg></a></header>
       <p class="setup-preview" role="status">Start with your timetable, or continue to Moodle. Nothing connects automatically.</p><div class="setup-restart-actions"><button type="button" id="setup-restart" class="text-button">Start again</button><button type="button" id="setup-restore" class="text-button" hidden>Restore previous workspace</button></div>
       <form id="setup-form" novalidate>
         <section class="setup-panel" data-step="0" aria-labelledby="setup-title-1">
@@ -68,7 +68,7 @@
         </section>
         <footer class="setup-actions"><button id="setup-back" type="button" class="button secondary" disabled>Back</button><span id="setup-progress">Step 1 of 4</span><button id="setup-next" type="submit" class="button primary">Continue <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-5-5 5 5-5 5"/></svg></button></footer>
       </form>
-      <noscript><p class="setup-help">Enable JavaScript to explore the setup steps, or <a class="text-link" href="dashboard.html">open your workspace</a>.</p></noscript>
+      <noscript><p class="setup-help">Enable JavaScript to explore the setup steps, or <a class="text-link" href="dashboard.html?skipSetup=1">open your workspace</a>.</p></noscript>
     </main>
   </div>
   <script type="module" src="setup.js"></script>

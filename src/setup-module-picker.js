@@ -14,9 +14,18 @@ export function mountSetupModulePicker(target, workspace) {
     const row = document.createElement('label'); row.className = 'module-choice';
     const input = document.createElement('input'); input.type = 'checkbox'; input.value = String(course.id); input.dataset.setupCourse = String(course.id); input.checked = selected.has(String(course.id));
     const copy = document.createElement('span'); copy.className = 'module-choice-copy';
-    const title = document.createElement('strong'); title.textContent = course.name || course.shortname || 'Untitled module';
-    const code = document.createElement('span'); code.className = 'module-choice-code'; code.textContent = course.shortname && course.shortname !== course.name ? course.shortname : '';
-    copy.append(title); if (code.textContent) copy.append(code);
+    const moduleCode = /\b[A-Z]{3,5}\d{4}(?=[_:\s]|$)/i.exec(`${course.shortname || ''} ${course.name || ''}`)?.[0]?.toUpperCase();
+    const title = document.createElement('strong');
+    const name = course.name || course.shortname || 'Untitled module';
+    title.textContent = moduleCode ? name.replace(/^[A-Z]{3,5}\d{4}:?\s*/i, '').replace(/\s*\[T[^\]]+\]/gi, '').replace(/\s+\d{2}\/\d{2}$/, '').trim() || name : name;
+    const code = document.createElement('span'); code.className = 'module-choice-code'; code.textContent = moduleCode || 'Moodle course';
+    copy.append(code, title);
+    const snapshot = workspace.courseContent?.[course.id], content = snapshot?.state;
+    if (content) {
+      const saved = document.createElement('small'); saved.className = 'module-choice-status';
+      saved.textContent = `${content.sections.length} sections · ${content.activities.length} activities fetched${snapshot.dataSource === 'mock' || content.dataSource === 'mock' ? ' · Mock fallback' : ''}`;
+      copy.append(saved);
+    }
     row.append(input, copy); list.append(row);
     rows.push({ row, input, search: `${course.name || ''} ${course.shortname || ''}`.toLowerCase() });
     input.addEventListener('change', () => { if (input.checked) selected.add(input.value); else selected.delete(input.value); refresh(); });

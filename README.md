@@ -1,6 +1,6 @@
 # Study Space · UCL Planner
 
-A Manifest V3 Chrome extension with a full-page study planner. It combines Moodle action deadlines with a UCL iCalendar timetable and schedules focus sessions around classes and personal time. No backend, account, API key or AI service is needed.
+A Manifest V3 Chrome extension with a full-page study planner. It combines Moodle action deadlines with a UCL iCalendar timetable and schedules focus sessions around classes and personal time. Gemini extracts study tasks and proposes plans through the local `npm run ai` backend. The incoming frontend also includes its separate assistant and calendar preview interactions.
 
 ## Implementation guides
 
@@ -13,8 +13,8 @@ A Manifest V3 Chrome extension with a full-page study planner. It combines Moodl
 1. In this folder, run `npm install` and `npm run build`.
 2. Open `chrome://extensions` and enable **Developer mode**.
 3. Click **Load unpacked** and select this project folder (`scheduler-extension`). You can also select `dist` for a clean package.
-4. Click the extension’s toolbar icon. The planner opens in a normal browser tab.
-5. Start with the labelled sample workspace, or connect your data.
+4. Click the extension’s toolbar icon to start the timetable, Moodle/module-selection, study-preferences and weekly-activities setup. Existing data is retained and prefilled.
+5. Finishing setup fetches selected course indexes, analyses them with Gemini and creates the calendar. Later launches open the completed workspace. **Skip setup** opens the calendar for this visit.
 
 After code changes, run `npm run build`, click **Reload** on the extension card, then refresh its dashboard tab. Both the project root and `dist` contain the manifest and runtime files after building. Selecting `src`, a parent directory, or a zip file will not work.
 
@@ -35,7 +35,7 @@ The first successful real integration replaces the sample workspace. Real feeds 
 - Add personal tasks, deadlines and work estimates. Estimates are starting points: Moodle assignments default to 120 minutes and quizzes to 60.
 - Click a calendar session for its details, or a task title to edit it. Moodle titles/deadlines are refreshed from Moodle; estimates and local completion survive syncs.
 - Mark a task complete when all its work is finished. Completion affects this planner only; it does not submit work or change Moodle.
-- **Regenerate plan** uses the current time and plans up to 28 days ahead, prioritising the earliest deadlines. It respects study hours, weekends, timetable events, personal time, and breaks.
+- Plans use continuous blocks: a two-hour sheet is one event and 2.5-hour lecture preparation is one event. Short gaps are skipped, with breaks preferred between blocks. Previously saved fragmented plans are rebuilt once on opening using the current scheduler, without an AI call. The Gemini backend is started with `npm run ai`.
 - Work that cannot fit is reported in **All tasks**. The planner never silently schedules it beyond its deadline.
 - Existing saved plans stay in place when reopening the dashboard. Regenerate to update them for the current time.
 - Initial sample plans illustrate a complete week, including earlier days; any edits/regeneration use the actual current time.
@@ -96,17 +96,17 @@ API references: [Chrome scripting](https://developer.chrome.com/docs/extensions/
 
 Merged origin/main through 0809449 while retaining the timetable-first UI, calendar editing preview, vertical OpenAI assistant, and onboarding preview. Sync Moodle now uses the upstream connection/service modules to fetch enrolled modules, selected-course content and deadlines; the timetable uses the upstream UCL adapter. No AI course analysis is triggered by this sync.
 
-Scraped course data is stored in workspace.courseContent (per-course state and fingerprint); calendar deadlines in workspace.moodleCalendarTasks; UCL events in workspace.events. Upstream planner, analysis and Gemini server modules are available for the next integration step. The current assistant still uses OpenAI via the server on port 4173. The upstream direct-API debug panel and forced setup redirect are not mounted over the existing frontend.
+Scraped course data is stored in workspace.courseContent (per-course state and fingerprint); calendar deadlines in workspace.moodleCalendarTasks; UCL events in workspace.events. The UI uses the shared planner, analysis and Gemini server modules for study tasks. The current assistant still uses OpenAI via the server on port 4173. The new frontend keeps its calendar preview and assistant; incomplete workspaces open the setup flow.
 
 Snapshot before merging: branch backup/frontend-before-logic-20261016. Local .env.local, credentials.json and moodle-local.json remain ignored. The upstream fixtures are sample fallbacks: sync surfaces their warnings and stores the dataSource metadata; they are not proof of a live Moodle connection.
 
 ## Manual onboarding / scraping check
 
-Reload the unpacked Chrome extension after building. Open its setup.html and use Start again (or setup.html?fresh=1) for an empty workspace. The previous workspace stays in local storage and Restore previous workspace restores it. The localhost/in-app preview cannot access signed-in Chrome Moodle tabs. In the extension, open Moodle and sign in yourself; Load modules, Fetch selected course data and Fetch deadlines each run only when clicked. Continue never initiates Moodle requests. Finishing setup uses local planning without AI analysis. Live failures are reported directly; recorded fallbacks require an explicit internal allowFallback option and are disabled in normal/manual use.
+Reload the unpacked Chrome extension after building. Open its setup.html and use Start again (or setup.html?fresh=1) for an empty workspace. The previous workspace stays in local storage and Restore previous workspace restores it. The localhost/in-app preview cannot access signed-in Chrome Moodle tabs. In the extension, open Moodle and sign in yourself; Load modules, Fetch selected course data and Fetch deadlines each run only when clicked. Continue saves the chosen modules. Finishing setup fetches selected course data, runs Gemini analysis and creates the study plan. Live failures use the supplied recorded course responses with explicit mock labels. Set the internal allowFallback option to false to disable fallbacks.
 
 ## Upstream study policy update
 
-The optional Gemini analysis/planning backend now includes the policy below. The current frontend, OpenAI chat and manual onboarding remain unchanged; this merge does not start scraping or AI analysis.
+The Gemini analysis/planning backend uses the policy below. The incoming frontend and its separate OpenAI event-creation assistant are preserved. Source checks run through their explicit setup buttons; the final setup step starts study analysis and planning.
 
 Gemini names study tasks/calendar sessions with a short module prefix and material identifier, for example **COMP0017 · Problem Sheet 3 Study** or **BENG0095 · Lecture 4 Notes Study**. Existing lecture/sheet/week numbers and topics are retained; academic-year suffixes and filename clutter are omitted.
 

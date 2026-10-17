@@ -29,7 +29,7 @@ test('deadline-first scheduling respects classes, personal time, work hours and 
 test('reports exact unplanned work and never places work after deadline', () => {
   const t = { ...task('urgent', 120), dueDate: atTime(monday, 10).toISOString() };
   const p = scheduleTasks({ tasks: [t], now });
-  assert.equal(total(p.blocks), 50); assert.equal(p.unscheduled[0].minutes, 70);
+  assert.equal(total(p.blocks), 0); assert.equal(p.unscheduled[0].minutes, 120);
   assert.ok(p.blocks.every(b => new Date(b.end) <= new Date(t.dueDate)));
 });
 test('ignores completed tasks, flags overdue ones and supports undated tasks', () => {
@@ -40,7 +40,7 @@ test('day preference is honored without silently spilling into other days', () =
   const p = scheduleTasks({ tasks: [task('maths', 180, 5)], preferences: { maths: { date: addDays(monday, 4) } }, now });
   assert.ok(p.blocks.every(b => dateKey(b.start) === addDays(monday, 4)));
   const noRoom = scheduleTasks({ tasks: [task('maths', 180, 5)], preferences: { maths: { date: addDays(monday, 4) } }, settings: { startHour: 9, endHour: 10 }, now });
-  assert.equal(total(noRoom.blocks), 50); assert.equal(noRoom.unscheduled[0].minutes, 130);
+  assert.equal(total(noRoom.blocks), 0); assert.equal(noRoom.unscheduled[0].minutes, 180);
 });
 test('weekends are skipped unless enabled', () => {
   const saturday = atTime('2026-10-17', 9), t = { ...task('weekend', 50), dueDate: atTime('2026-10-18', 18).toISOString() };

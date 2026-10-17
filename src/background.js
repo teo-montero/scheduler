@@ -3,11 +3,14 @@ import { normalizeCourseState } from './course-content.js';
 import { BUILD_ID, TIMETABLE_ORIGINS } from './protocol.js';
 import { createMoodleConnection } from './integrations/moodle.js';
 import { fetchUclTimetable } from './integrations/timetable.js';
+import { workspaceEntryPage } from './onboarding.js';
 chrome.storage.local.setAccessLevel({ accessLevel: 'TRUSTED_CONTEXTS' }).catch(() => {});
 chrome.action.onClicked.addListener(async () => {
-  const url = chrome.runtime.getURL('dashboard.html');
-  const existing = (await chrome.tabs.query({ url }))[0];
-  if (existing) { await chrome.tabs.update(existing.id, { active: true }); await chrome.windows.update(existing.windowId, { focused: true }); }
+  const { workspace } = await chrome.storage.local.get('workspace');
+  const url = chrome.runtime.getURL(workspaceEntryPage(workspace));
+  const tabs = await chrome.tabs.query({ url: ['dashboard.html', 'setup.html'].map(page => `${chrome.runtime.getURL(page)}*`) });
+  const existing = tabs.find(tab => tab.url?.split(/[?#]/)[0] === url) || tabs[0];
+  if (existing) { await chrome.tabs.update(existing.id, { active: true, ...(existing.url?.split(/[?#]/)[0] === url ? {} : { url }) }); await chrome.windows.update(existing.windowId, { focused: true }); }
   else await chrome.tabs.create({ url });
 });
 const moodle = createMoodleConnection();

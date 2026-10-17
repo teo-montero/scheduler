@@ -23,7 +23,7 @@ test('plan and chat HTTP endpoints use native Gemini structured output, validate
   try {
     const state = emptyWorkspace(); state.tasks = [{ id: 'sheet', title: 'Exercise sheet', estimatedMinutes: 60 }]; state.settings.horizonDays = 2;
     const context = buildPlanningContext(state, atTime('2026-10-19', 9)); context.calendarUrl = 'private-do-not-send'; context.cookie = 'private-do-not-send';
-    const response = await post('/plan', context), result = await response.json(); assert.equal(response.status, 200); assert.equal(result.sessions.length, 2); assert.equal(result.usage.inputTokens, 200);
+    const response = await post('/plan', context), result = await response.json(); assert.equal(response.status, 200); assert.equal(result.sessions.length, 1); assert.equal(result.usage.inputTokens, 200);
     const chatResponse = await post('/chat', { message: 'Keep this afternoon free; I am going to the bar with friends', now: context.now, tasks: state.tasks, calendarUrl: 'private-do-not-send' });
     const chat = await chatResponse.json(); assert.equal(chatResponse.status, 200); assert.equal(chat.actions[0].type, 'block_time');
     badOutput = true; const invalid = await post('/plan', context); assert.equal(invalid.status, 400); assert.equal((await invalid.json()).ok, false);
